@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Winget Package Search</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: auto; padding: 2em; }
+    input[type="text"] { width: 100%; padding: 0.5em; font-size: 1.1em; }
+    .pkg { border-bottom: 1px solid #eee; padding: 1em 0; }
+    .copy-btn { margin-top: 0.2em; }
+    .desc { color: #444; font-size: 0.95em; }
+    .info { color: #888; font-size: 0.90em;}
+  </style>
+</head>
+<body>
+  <h1>Winget Packages Search</h1>
+  <input type="text" id="search" placeholder="Search by package id or name..." autofocus>
+  <div id="results"></div>
+  <p style="margin-top:2em;font-size:0.95em;color:#888;">
+    Data auto-extracted from <a href="https://github.com/microsoft/winget-pkgs">microsoft/winget-pkgs</a>.<br>
+    <a href="https://github.com/solrevdev/your-repo-name">Source on GitHub</a>
+  </p>
+  <script>
+    let pkgs = [];
+    fetch('packages.json')
+      .then(r => r.json())
+      .then(data => { pkgs = data; showResults(""); });
+
+    document.getElementById('search').addEventListener('input', function() {
+      showResults(this.value);
+    });
+
+    function showResults(query) {
+      let q = query.trim().toLowerCase();
+      let results = pkgs.filter(pkg =>
+        (pkg.id && pkg.id.toLowerCase().includes(q)) ||
+        (pkg.name && pkg.name.toLowerCase().includes(q))
+      ).slice(0, 50); // limit to 50 results
+      document.getElementById('results').innerHTML = results.map(pkg => `
+        <div class="pkg">
+          <b>${pkg.name || "?"}</b> <span class="info">[${pkg.id}]</span><br>
+          <span class="desc">${pkg.description || ""}</span><br>
+          <span class="info">${pkg.publisher || ""} ${pkg.version ? " – v" + pkg.version : ""}</span><br>
+          <button class="copy-btn" onclick="copyCmd('winget install -e --id ${pkg.id}')">Copy: winget install -e --id ${pkg.id}</button>
+        </div>
+      `).join('') || "<i>No matches found.</i>";
+    }
+
+    function copyCmd(cmd) {
+      navigator.clipboard.writeText(cmd);
+      alert("Copied: " + cmd);
+    }
+  </script>
+</body>
+</html>
