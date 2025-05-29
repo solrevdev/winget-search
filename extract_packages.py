@@ -2,6 +2,13 @@ import os
 import sys
 import yaml
 import json
+import datetime
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (datetime.date, datetime.datetime)):
+            return obj.isoformat()
+        return super().default(obj)
 
 def extract_from_manifest(path):
     try:
@@ -38,7 +45,7 @@ def main(manifests_dir, out_path):
             unique[key] = pkg
     print(f"Unique packages extracted: {len(unique)}")
     with open(out_path, "w", encoding="utf-8") as out:
-        json.dump(list(unique.values()), out, indent=2, ensure_ascii=False)
+        json.dump(list(unique.values()), out, indent=2, ensure_ascii=False, cls=EnhancedJSONEncoder)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
