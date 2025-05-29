@@ -38,7 +38,7 @@ jobs:
 
             - name: Copy site assets
               run: |
-                  cp index.html packages.json .
+                  cp -n index.html packages.json .
 
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v4
