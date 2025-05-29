@@ -42,4 +42,3 @@ def main(manifests_dir, out_path):
 
 if __name__ == "__main__":
     if len(sys.argv)
-
