@@ -41,4 +41,7 @@ def main(manifests_dir, out_path):
         json.dump(list(unique.values()), out, indent=2, ensure_ascii=False)
 
 if __name__ == "__main__":
-    if len(sys.argv)
+    if len(sys.argv) != 3:
+        print("Usage: python extract_packages.py <manifests_dir> <output_json>")
+        sys.exit(1)
+    main(sys.argv[1], sys.argv[2])
