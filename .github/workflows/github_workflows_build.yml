@@ -3,8 +3,13 @@ name: Build and Deploy
 on:
     push:
         branches: [main, master]
+    schedule:
+        # Run daily at 2 AM UTC to get fresh package data
+        - cron: '0 2 * * *'
     workflow_dispatch:
 
+# This workflow automatically deploys to GitHub Pages using GitHub Actions
+# No manual configuration needed - it handles everything!
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -12,17 +17,36 @@ jobs:
             - name: Checkout this repo
               uses: actions/checkout@v4
 
+            - name: Cache winget-pkgs repo
+              uses: actions/cache@v4
+              id: cache-winget
+              with:
+                  path: winget-pkgs
+                  key: winget-pkgs-${{ github.run_id }}
+                  restore-keys: |
+                      winget-pkgs-
+
             - name: Checkout winget-pkgs repo
               uses: actions/checkout@v4
               with:
                   repository: microsoft/winget-pkgs
                   path: winget-pkgs
                   fetch-depth: 1
+                  # Only clone if not cached
+                  if: steps.cache-winget.outputs.cache-hit != 'true'
+
+            - name: Update winget-pkgs if cached
+              if: steps.cache-winget.outputs.cache-hit == 'true'
+              run: |
+                  cd winget-pkgs
+                  git fetch origin
+                  git reset --hard origin/master
 
             - name: Set up Python
               uses: actions/setup-python@v5
               with:
-                  python-version: 3.11
+                  python-version: '3.11'
+                  cache: 'pip'
 
             - name: Install requirements
               run: |
@@ -32,18 +56,62 @@ jobs:
             - name: Extract packages.json
               run: |
                   python extract_packages.py winget-pkgs/manifests/ packages.json
-
-            - name: List manifest files
-              run: ls -l winget-pkgs/manifests | head -20
+                  
+                  # Verify the output
+                  if [ ! -f packages.json ]; then
+                      echo "Error: packages.json was not created"
+                      exit 1
+                  fi
+                  
+                  # Check file size (should be at least 1MB for ~30k packages)
+                  size=$(stat -c%s packages.json)
+                  if [ $size -lt 1000000 ]; then
+                      echo "Warning: packages.json seems too small (${size} bytes)"
+                      cat packages.json | head -50
+                  fi
+                  
+                  echo "Successfully created packages.json (${size} bytes)"
 
             - name: Copy site assets
               run: |
-                  cp -n index.html packages.json .
+                  # Create a deployment directory
+                  mkdir -p deploy
+                  
+                  # Copy files (overwrite if exists)
+                  cp index.html deploy/
+                  cp packages.json deploy/
+                  
+                  # Create a simple 404 page
+                  echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/"></head></html>' > deploy/404.html
+                  
+                  # Create a CNAME file if you're using a custom domain
+                  # echo "your-custom-domain.com" > deploy/CNAME
 
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v4
               with:
+                  # GITHUB_TOKEN is automatically provided by GitHub Actions
+                  # No personal access token needed!
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: ./
+                  publish_dir: ./deploy
                   publish_branch: gh-pages
                   force_orphan: true
+                  user_name: 'github-actions[bot]'
+                  user_email: 'github-actions[bot]@users.noreply.github.com'
+                  commit_message: 'Deploy to GitHub Pages - ${{ github.run_number }}'
+              # This action automatically:
+              # - Creates the gh-pages branch if it doesn't exist
+              # - Pushes the built site to that branch
+              # - GitHub Pages automatically serves from this deployment
+
+            - name: Create deployment summary
+              if: success()
+              run: |
+                  echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Packages extracted**: $(jq '.metadata.total // length' packages.json)" >> $GITHUB_STEP_SUMMARY
+                  echo "- **File size**: $(stat -c%s packages.json | numfmt --to=iec-i --suffix=B)" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Run number**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "Visit the site at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY

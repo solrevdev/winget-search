@@ -422,3 +422,17 @@ fabric.properties
 
 # macos .DS_Store file
 **/.DS_Store
+
+# Local testing
+winget-pkgs/
+packages.json
+
+# Python virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# uv
+.uv/
+uv.lock

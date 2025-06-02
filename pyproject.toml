@@ -1,0 +1,16 @@
+[project]
+name = "winget-package-search"
+version = "1.0.0"
+description = "Web search interface for Windows Package Manager packages"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+    "packaging>=23.0",
+]
+
+[tool.uv]
+dev-dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
