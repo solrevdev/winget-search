@@ -54,7 +54,12 @@ def extract_package_info(manifest_dir):
                 package_info["id"] = doc.get("PackageIdentifier")
                 package_info["version"] = doc.get("PackageVersion")
                 package_info["shortDescription"] = doc.get("ShortDescription")
-                package_info["tags"] = doc.get("Tags", [])
+                # Ensure tags are strings
+                raw_tags = doc.get("Tags", [])
+                if isinstance(raw_tags, list):
+                    package_info["tags"] = [str(tag) for tag in raw_tags if tag]
+                else:
+                    package_info["tags"] = []
         except Exception as e:
             print(f"Error parsing version file {version_file}: {e}")
     
@@ -74,7 +79,11 @@ def extract_package_info(manifest_dir):
                 package_info["homepage"] = doc.get("PackageUrl")
                 package_info["license"] = doc.get("License")
                 if not package_info["tags"]:
-                    package_info["tags"] = doc.get("Tags", [])
+                    raw_tags = doc.get("Tags", [])
+                    if isinstance(raw_tags, list):
+                        package_info["tags"] = [str(tag) for tag in raw_tags if tag]
+                    else:
+                        package_info["tags"] = []
         except Exception as e:
             print(f"Error parsing locale file {locale_file}: {e}")
     

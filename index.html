@@ -402,7 +402,9 @@
           const nameMatch = pkg.name?.toLowerCase().includes(q);
           const descMatch = pkg.description?.toLowerCase().includes(q);
           const publisherMatch = pkg.publisher?.toLowerCase().includes(q);
-          const tagMatch = pkg.tags?.some(tag => tag.toLowerCase().includes(q));
+          const tagMatch = pkg.tags?.some(tag => 
+            tag && typeof tag === 'string' && tag.toLowerCase().includes(q)
+          );
           
           return idMatch || nameMatch || descMatch || publisherMatch || tagMatch;
         }).slice(0, 100);
@@ -420,9 +422,10 @@
 
       resultsDiv.innerHTML = results.map(pkg => {
         const command = `winget install -e --id ${pkg.id}`;
-        const tags = pkg.tags?.length ? pkg.tags.map(tag => 
-          `<span class="tag">${escapeHtml(tag)}</span>`
-        ).join('') : '';
+        const tags = pkg.tags?.length ? pkg.tags
+          .filter(tag => tag && typeof tag === 'string')
+          .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+          .join('') : '';
         
         return `
           <div class="pkg">
