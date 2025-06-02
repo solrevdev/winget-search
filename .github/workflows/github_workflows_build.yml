@@ -8,6 +8,17 @@ on:
         - cron: '0 2 * * *'
     workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+    contents: write
+    pages: write
+    id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+    group: "pages"
+    cancel-in-progress: false
+
 # This workflow automatically deploys to GitHub Pages using GitHub Actions
 # No manual configuration needed - it handles everything!
 jobs:
@@ -27,13 +38,12 @@ jobs:
                       winget-pkgs-
 
             - name: Checkout winget-pkgs repo
+              if: steps.cache-winget.outputs.cache-hit != 'true'
               uses: actions/checkout@v4
               with:
                   repository: microsoft/winget-pkgs
                   path: winget-pkgs
                   fetch-depth: 1
-                  # Only clone if not cached
-                  if: steps.cache-winget.outputs.cache-hit != 'true'
 
             - name: Update winget-pkgs if cached
               if: steps.cache-winget.outputs.cache-hit == 'true'
@@ -81,8 +91,11 @@ jobs:
                   cp index.html deploy/
                   cp packages.json deploy/
                   
+                  # Create .nojekyll to prevent Jekyll processing
+                  touch deploy/.nojekyll
+                  
                   # Create a simple 404 page
-                  echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/"></head></html>' > deploy/404.html
+                  echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/winget-search/"></head></html>' > deploy/404.html
                   
                   # Create a CNAME file if you're using a custom domain
                   # echo "your-custom-domain.com" > deploy/CNAME
@@ -99,10 +112,19 @@ jobs:
                   user_name: 'github-actions[bot]'
                   user_email: 'github-actions[bot]@users.noreply.github.com'
                   commit_message: 'Deploy to GitHub Pages - ${{ github.run_number }}'
+                  # Force push to ensure GitHub Pages detects changes
+                  keep_files: false
+                  # Add .nojekyll to bypass Jekyll processing
+                  enable_jekyll: false
               # This action automatically:
               # - Creates the gh-pages branch if it doesn't exist
               # - Pushes the built site to that branch
               # - GitHub Pages automatically serves from this deployment
+
+            - name: Wait for deployment
+              run: |
+                  echo "Deployment complete. GitHub Pages will update within a few minutes."
+                  echo "If using a custom domain, it may take longer due to CDN caching."
 
             - name: Create deployment summary
               if: success()

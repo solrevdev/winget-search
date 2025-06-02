@@ -265,6 +265,39 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## Troubleshooting
 
+### GitHub Pages not updating (shows old content)
+
+This is a common issue, especially with custom domains. Try these solutions:
+
+1. **Check GitHub Pages status**:
+   - Go to Settings > Pages
+   - Look for "Your site is live at..." message
+   - Check the "Last deployed" timestamp
+   - If it's old, the deployment isn't being detected
+
+2. **Force a rebuild**:
+   - Run the "Trigger Pages Deploy" workflow manually from the Actions tab
+   - Or make a small change to any file in the gh-pages branch
+
+3. **Clear CDN cache** (for custom domains):
+   - Custom domains use GitHub's CDN which can cache aggressively
+   - Wait 10-15 minutes for cache to expire
+   - Try accessing with `?v=timestamp` to bypass cache: `https://yourdomain.com/winget-search/?v=123`
+
+4. **Check deployment source**:
+   - In Settings > Pages, try switching between "Deploy from branch" and "GitHub Actions"
+   - If using "Deploy from branch", ensure it's set to `gh-pages` branch and `/ (root)`
+
+5. **Verify files in gh-pages branch**:
+   - Check that the new files are actually in the gh-pages branch
+   - Look for the `:root` CSS variables in index.html
+   - Ensure there's a `.nojekyll` file (prevents Jekyll processing)
+
+6. **Browser cache**:
+   - Hard refresh: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
+   - Open in incognito/private mode
+   - Check browser DevTools > Network tab with "Disable cache" checked
+
 ### GitHub Pages not showing or wrong deployment source
 
 - The workflow automatically configures GitHub Pages to use "GitHub Actions" as the source
