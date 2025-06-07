@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Winget Package Search</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --text-primary: #212529;
+      --text-secondary: #6c757d;
+      --border-color: #dee2e6;
+      --accent-color: #0066cc;
+      --success-color: #28a745;
+      --hover-bg: #f0f0f0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --text-primary: #e9ecef;
+        --text-secondary: #adb5bd;
+        --border-color: #495057;
+        --accent-color: #4dabf7;
+        --success-color: #51cf66;
+        --hover-bg: #343434;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9em;
+      margin-bottom: 20px;
+    }
+
+    .search-container {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    #search {
+      width: 100%;
+      padding: 12px 40px 12px 16px;
+      font-size: 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: border-color 0.2s;
+    }
+
+    #search:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    .search-icon {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      pointer-events: none;
+    }
+
+    .stats {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9em;
+      margin-bottom: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .pkg {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background-color: var(--bg-secondary);
+      transition: all 0.2s;
+    }
+
+    .pkg:hover {
+      background-color: var(--hover-bg);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .pkg-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pkg-name {
+      font-weight: 600;
+      font-size: 1.1em;
+      color: var(--text-primary);
+    }
+
+    .pkg-id {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.9em;
+      color: var(--text-secondary);
+      background-color: var(--bg-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .pkg-version {
+      font-size: 0.85em;
+      color: var(--text-secondary);
+      background-color: var(--bg-primary);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .pkg-desc {
+      color: var(--text-secondary);
+      margin: 8px 0;
+      font-size: 0.95em;
+    }
+
+    .pkg-meta {
+      color: var(--text-secondary);
+      font-size: 0.85em;
+      margin-top: 8px;
+    }
+
+    .pkg-tags {
+      margin-top: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      background-color: var(--bg-primary);
+      color: var(--text-secondary);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+
+    .copy-section {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .copy-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .copy-btn:hover {
+      background-color: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+    }
+
+    .copy-btn.success {
+      background-color: var(--success-color);
+      color: white;
+      border-color: var(--success-color);
+    }
+
+    .command {
+      font-family: 'Consolas', 'Monaco', monospace;
+      background-color: var(--bg-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      white-space: nowrap;
+      font-size: 0.9em;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      font-size: 0.9em;
+      color: var(--text-secondary);
+    }
+
+    .footer a {
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .keyboard-hint {
+      font-size: 0.8em;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 1.5em;
+      }
+
+      .pkg {
+        padding: 12px;
+      }
+
+      .command {
+        font-size: 0.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="currentColor">
+      <path d="M16 2L2 7v10c0 8.84 7.16 14 14 14s14-5.16 14-14V7L16 2z"/>
+    </svg>
+    Winget Package Search
+  </h1>
+  <div class="subtitle">Search and install Windows Package Manager packages</div>
+  
+  <div class="search-container">
+    <input 
+      type="text" 
+      id="search" 
+      placeholder="Search by package name, ID, or description..." 
+      autocomplete="off"
+      autofocus
+    >
+    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/>
+      <path d="M21 21l-4.35-4.35"/>
+    </svg>
+  </div>
+  
+  <div class="keyboard-hint">Press <kbd>/</kbd> to focus search • <kbd>Esc</kbd> to clear</div>
+  
+  <div id="stats" class="stats"></div>
+  
+  <div id="loading" class="loading">Loading packages...</div>
+  <div id="error" class="error" style="display: none;"></div>
+  <div id="results"></div>
+  
+  <footer class="footer">
+    <p>
+      Data auto-extracted from <a href="https://github.com/microsoft/winget-pkgs" target="_blank" rel="noopener">microsoft/winget-pkgs</a>
+      <span id="last-updated"></span>
+    </p>
+    <p>
+      <a href="https://github.com/YOUR_USERNAME/YOUR_REPO_NAME" target="_blank" rel="noopener">View source on GitHub</a> • 
+      <a href="https://learn.microsoft.com/en-us/windows/package-manager/" target="_blank" rel="noopener">Winget Documentation</a>
+    </p>
+  </footer>
+
+  <script>
+    let packages = [];
+    let searchTimeout;
+    const resultsDiv = document.getElementById('results');
+    const searchInput = document.getElementById('search');
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+    const statsDiv = document.getElementById('stats');
+    const lastUpdatedSpan = document.getElementById('last-updated');
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement !== searchInput) {
+        e.preventDefault();
+        searchInput.focus();
+      } else if (e.key === 'Escape' && document.activeElement === searchInput) {
+        searchInput.value = '';
+        showResults('');
+      }
+    });
+
+    // Load packages
+    fetch('packages.json')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load packages');
+        return response.json();
+      })
+      .then(data => {
+        // Handle both old and new format
+        if (data.packages) {
+          packages = data.packages;
+          if (data.metadata?.extracted_at) {
+            const date = new Date(data.metadata.extracted_at);
+            lastUpdatedSpan.textContent = ` • Last updated: ${date.toLocaleDateString()}`;
+          }
+        } else if (Array.isArray(data)) {
+          packages = data;
+        }
+        
+        loadingDiv.style.display = 'none';
+        statsDiv.textContent = `${packages.length.toLocaleString()} packages available`;
+        showResults('');
+      })
+      .catch(error => {
+        console.error('Error loading packages:', error);
+        loadingDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Failed to load package data. Please try refreshing the page.';
+      });
+
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        showResults(this.value);
+      }, 300);
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+
+    function highlightMatch(text, query) {
+      if (!query || !text) return escapeHtml(text);
+      
+      const escaped = escapeHtml(text);
+      const regex = new RegExp(`(${escapeHtml(query)})`, 'gi');
+      return escaped.replace(regex, '<mark>$1</mark>');
+    }
+
+    function showResults(query) {
+      const q = query.trim().toLowerCase();
+      
+      let results;
+      if (!q) {
+        results = packages.slice(0, 50);
+      } else {
+        results = packages.filter(pkg => {
+          const idMatch = pkg.id?.toLowerCase().includes(q);
+          const nameMatch = pkg.name?.toLowerCase().includes(q);
+          const descMatch = pkg.description?.toLowerCase().includes(q);
+          const publisherMatch = pkg.publisher?.toLowerCase().includes(q);
+          const tagMatch = pkg.tags?.some(tag => 
+            tag && typeof tag === 'string' && tag.toLowerCase().includes(q)
+          );
+          
+          return idMatch || nameMatch || descMatch || publisherMatch || tagMatch;
+        }).slice(0, 100);
+      }
+
+      if (results.length === 0) {
+        resultsDiv.innerHTML = `
+          <div class="no-results">
+            <p>No packages found matching "${escapeHtml(query)}"</p>
+            <p>Try searching with different keywords</p>
+          </div>
+        `;
+        return;
+      }
+
+      resultsDiv.innerHTML = results.map(pkg => {
+        const command = `winget install -e --id ${pkg.id}`;
+        const tags = pkg.tags?.length ? pkg.tags
+          .filter(tag => tag && typeof tag === 'string')
+          .map(tag => `<span class="tag">${escapeHtml(tag)}</span>`)
+          .join('') : '';
+        
+        return `
+          <div class="pkg">
+            <div class="pkg-header">
+              <div>
+                <span class="pkg-name">${highlightMatch(pkg.name || pkg.id, q)}</span>
+                <span class="pkg-id">${highlightMatch(pkg.id, q)}</span>
+              </div>
+              ${pkg.version ? `<span class="pkg-version">v${escapeHtml(pkg.version)}</span>` : ''}
+            </div>
+            ${pkg.description ? `<div class="pkg-desc">${highlightMatch(pkg.description, q)}</div>` : ''}
+            ${pkg.publisher ? `<div class="pkg-meta">Publisher: ${highlightMatch(pkg.publisher, q)}</div>` : ''}
+            ${tags ? `<div class="pkg-tags">${tags}</div>` : ''}
+            <div class="copy-section">
+              <code class="command">${escapeHtml(command)}</code>
+              <button class="copy-btn" onclick="copyCommand(this, '${escapeHtml(command).replace(/'/g, "\\'")}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyCommand(button, cmd) {
+      navigator.clipboard.writeText(cmd).then(() => {
+        const originalHtml = button.innerHTML;
+        button.classList.add('success');
+        button.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Copied!
+        `;
+        
+        setTimeout(() => {
+          button.classList.remove('success');
+          button.innerHTML = originalHtml;
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy command. Please try selecting and copying manually.');
+      });
+    }
+  </script>
+</body>
+</html>
