@@ -4,7 +4,6 @@ import yaml
 import json
 import datetime
 from packaging import version
-import re
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -19,11 +18,6 @@ def parse_version(ver_str):
     except:
         # Fallback for non-standard versions
         return version.parse("0.0.0")
-
-def is_english_manifest(filepath):
-    """Check if manifest is English or default (no locale specified)"""
-    # Default manifests (no locale) or English manifests
-    return '.locale.' not in filepath or '.locale.en-US.' in filepath
 
 def extract_package_info(manifest_dir):
     """Extract comprehensive package info from a manifest directory"""
@@ -164,7 +158,7 @@ def main(manifests_dir, out_path):
                 "extracted_at": datetime.datetime.utcnow().isoformat(),
                 "source": "microsoft/winget-pkgs"
             }
-        }, out, indent=2, ensure_ascii=False, cls=EnhancedJSONEncoder)
+        }, out, separators=(",", ":"), ensure_ascii=False, cls=EnhancedJSONEncoder)
     
     print(f"Output written to: {out_path}")
 
