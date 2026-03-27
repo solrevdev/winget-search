@@ -6,13 +6,16 @@ This project provides a fast, searchable web interface for Windows Package Manag
 2. Build a static site with the latest package information
 3. Deploy directly to GitHub Pages without any manual configuration
 
-The entire process is automated - just push your code and GitHub Actions handles everything else!# Winget Package Web Search
+The entire process is automated - just push your code and GitHub Actions handles everything else!
+
+# Winget Package Web Search
 
 A fast, modern web search interface for [Windows Package Manager (winget)](https://github.com/microsoft/winget-pkgs) packages with instant copy-to-clipboard installation commands.
 
 ## Features
 
 - 🔍 **Instant search** - Search by package ID, name, description, publisher, or tags
+- 🧭 **Example searches** - Start from common queries on the blank home screen
 - 📋 **One-click copy** - Copy `winget install` commands instantly
 - 🌐 **English-only results** - Filters to show only English package descriptions
 - 🔄 **Auto-updated** - Daily updates via GitHub Actions
@@ -35,6 +38,7 @@ Visit the live site: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
 
 2. **Search Interface**: A static HTML page that:
    - Loads the generated `packages.json`
+   - Shows a blank home state with example searches
    - Provides instant client-side search
    - Generates copy-ready `winget install` commands
 
@@ -231,8 +235,9 @@ The extraction script (`extract_packages.py`):
 ### Performance
 
 - Initial load: ~5-10MB JSON file containing ~30,000+ packages
+- The home page starts blank and suggests example searches instead of showing arbitrary starter results
 - Search is performed client-side for instant results
-- Results are limited to 100 items for performance
+- Ranked search results are capped at 200 items for performance
 - Debounced search input (300ms) for smooth typing
 
 ## Contributing

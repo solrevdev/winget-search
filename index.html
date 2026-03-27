@@ -93,6 +93,62 @@
       margin-bottom: 20px;
     }
 
+    .empty-state {
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 12px;
+      background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+    }
+
+    .empty-state-kicker {
+      color: var(--accent-color);
+      font-size: 0.75em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .empty-state h2 {
+      margin: 8px 0 6px;
+      font-size: 1.25em;
+    }
+
+    .empty-state p {
+      margin: 0;
+      color: var(--text-secondary);
+    }
+
+    .example-searches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .example-search {
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+
+    .example-search:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      transform: translateY(-1px);
+    }
+
+    .empty-state-note {
+      margin-top: 14px;
+      color: var(--text-secondary);
+      font-size: 0.9em;
+    }
+
     .loading {
       text-align: center;
       padding: 40px;
@@ -399,7 +455,6 @@
     let lastMatchCount = 0;
     let visibleCount = 0;
     let searchTimeout;
-    const DEFAULT_RESULTS_LIMIT = 50;
     const MAX_SEARCH_RESULTS = 200;
     const PAGE_SIZE = 25;
     const resultsDiv = document.getElementById('results');
@@ -408,6 +463,14 @@
     const errorDiv = document.getElementById('error');
     const statsDiv = document.getElementById('stats');
     const lastUpdatedSpan = document.getElementById('last-updated');
+    const EXAMPLE_SEARCHES = [
+      'Git',
+      'Google Chrome',
+      'Microsoft Edge',
+      'Visual Studio Code',
+      'Docker Desktop',
+      '7-Zip'
+    ];
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -528,7 +591,7 @@
 
     function updateStats(query, totalMatches, showingCount, truncated) {
       if (!query) {
-        statsDiv.textContent = `${packages.length.toLocaleString()} packages available • showing ${showingCount.toLocaleString()} starter results`;
+        statsDiv.textContent = `${packages.length.toLocaleString()} packages available • try an example search below`;
         return;
       }
 
@@ -630,11 +693,32 @@
       `;
     }
 
+    function renderEmptyState() {
+      return `
+        <div class="empty-state">
+          <div class="empty-state-kicker">Example searches</div>
+          <h2>Start with a common package</h2>
+          <p>Search by package ID, name, publisher, description, or tag.</p>
+          <div class="example-searches">
+            ${EXAMPLE_SEARCHES.map(example => `<button type="button" class="example-search" onclick="filterBy('${escapeForSingleQuotedJs(example)}')">${escapeHtml(example)}</button>`).join('')}
+          </div>
+          <div class="empty-state-note">You can click a publisher or tag in a result to narrow the search once results appear.</div>
+        </div>
+      `;
+    }
+
     function renderResults(query) {
+      const trimmedQuery = String(query || '').trim();
+
+      if (!trimmedQuery) {
+        resultsDiv.innerHTML = renderEmptyState();
+        return;
+      }
+
       if (!currentResults.length) {
         resultsDiv.innerHTML = `
           <div class="no-results">
-            <p>No packages found matching "${escapeHtml(query)}"</p>
+            <p>No packages found matching "${escapeHtml(trimmedQuery)}"</p>
             <p>Try searching by package ID, name, publisher, or tag</p>
           </div>
         `;
@@ -642,7 +726,7 @@
       }
 
       const visible = currentResults.slice(0, visibleCount);
-      resultsDiv.innerHTML = visible.map(pkg => renderPackage(pkg, query)).join('');
+      resultsDiv.innerHTML = visible.map(pkg => renderPackage(pkg, trimmedQuery)).join('');
 
       if (visibleCount < currentResults.length) {
         const remaining = currentResults.length - visibleCount;
@@ -669,10 +753,10 @@
       }
 
       if (!tokens.length) {
-        currentResults = packages.slice(0, DEFAULT_RESULTS_LIMIT);
+        currentResults = [];
         lastMatchCount = packages.length;
-        visibleCount = currentResults.length;
-        updateStats('', lastMatchCount, visibleCount, lastMatchCount > visibleCount);
+        visibleCount = 0;
+        updateStats('', lastMatchCount, visibleCount, false);
         renderResults(trimmedQuery);
         return;
       }
