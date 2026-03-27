@@ -95,22 +95,32 @@
 
     .empty-state {
       border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 32px;
       margin-bottom: 12px;
-      background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .empty-state-header {
+      text-align: center;
+      margin-bottom: 24px;
     }
 
     .empty-state-kicker {
       color: var(--accent-color);
-      font-size: 0.75em;
+      font-size: 0.7em;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
+      display: inline-block;
+      background-color: color-mix(in srgb, var(--accent-color) 8%, transparent);
+      padding: 4px 12px;
+      border-radius: 999px;
     }
 
     .empty-state h2 {
-      margin: 8px 0 6px;
+      margin: 12px 0 6px;
       font-size: 1.25em;
     }
 
@@ -122,26 +132,31 @@
     .example-searches {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .example-search-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 16px;
+      gap: 12px;
     }
 
     .example-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
     }
 
     .example-group-title {
-      color: var(--text-primary);
-      font-size: 0.95em;
+      color: var(--text-secondary);
+      font-size: 0.8em;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     .example-group .example-searches {
@@ -150,25 +165,31 @@
 
     .example-search {
       border: 1px solid var(--border-color);
-      border-radius: 999px;
-      padding: 8px 12px;
-      background-color: var(--bg-primary);
+      border-radius: 8px;
+      padding: 7px 14px;
+      background-color: var(--bg-secondary);
       color: var(--text-primary);
       cursor: pointer;
-      font-size: 0.9em;
-      transition: all 0.2s;
+      font-size: 0.88em;
+      font-weight: 500;
+      transition: all 0.15s ease;
     }
 
     .example-search:hover {
       border-color: var(--accent-color);
       color: var(--accent-color);
+      background-color: color-mix(in srgb, var(--accent-color) 6%, var(--bg-primary));
       transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     }
 
     .empty-state-note {
-      margin-top: 14px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
       color: var(--text-secondary);
-      font-size: 0.9em;
+      font-size: 0.85em;
+      text-align: center;
     }
 
     .loading {
@@ -425,6 +446,10 @@
 
       .command {
         font-size: 0.8em;
+      }
+
+      .empty-state {
+        padding: 20px;
       }
 
       .example-search-grid {
@@ -734,9 +759,11 @@
     function renderEmptyState() {
       return `
         <div class="empty-state">
-          <div class="empty-state-kicker">Try these</div>
-          <h2>Start with a common package</h2>
-          <p>Search by package ID, name, publisher, description, or tag.</p>
+          <div class="empty-state-header">
+            <div class="empty-state-kicker">Try these</div>
+            <h2>Start with a common package</h2>
+            <p>Search by package ID, name, publisher, description, or tag.</p>
+          </div>
           <div class="example-search-grid">
             ${EXAMPLE_SEARCHES.map(group => `
               <section class="example-group" aria-label="${escapeHtml(group.title)}">
@@ -747,7 +774,7 @@
               </section>
             `).join('')}
           </div>
-          <div class="empty-state-note">You can click a publisher or tag in a result to narrow the search once results appear.</div>
+          <div class="empty-state-note">Click a publisher or tag in any result to narrow your search.</div>
         </div>
       `;
     }
