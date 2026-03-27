@@ -69,6 +69,16 @@ so future contributors/LLMs can continue from the remaining items.
 `github_workflows_build.yml` runs on push to `main`/`master`, on schedule, and via manual dispatch.
 Pushing `codex/frontend-search-improvements` should not trigger that workflow automatically.
 
+### Pages Configuration Note (2026-03-27)
+
+GitHub Pages must remain enabled for this repository and must serve from the `gh-pages`
+branch root. A successful `Build and Deploy` run only updates the deployment branch; it does
+not re-enable Pages if the repository-level Pages setting has been turned off.
+
+Practical consequence: if `gh-pages` contains the expected `index.html`/`packages.json`
+artifacts but `https://solrevdev.com/winget-search/` returns `404`, check **Settings** >
+**Pages** before assuming a frontend regression.
+
 ---
 
 ## Bugs

@@ -77,16 +77,23 @@ Visit the live site: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
    - You should see the "Build and Deploy" workflow running
    - This first run will take a few minutes as it processes ~30,000+ packages
 
-6. **GitHub Pages will be automatically configured**:
-   - The workflow handles everything automatically
-   - Once the workflow completes, go to **Settings** > **Pages**
-   - You should see "Your site is live at https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/"
-   - Under "Build and deployment" > "Source", it will show **GitHub Actions**
-   - No manual configuration needed!
+6. **Enable GitHub Pages for this repository**:
+   - Go to **Settings** > **Pages**
+   - Under "Build and deployment" > "Source", choose **Deploy from a branch**
+   - Set the branch to `gh-pages` and the folder to `/ (root)`
+   - Save the change and wait for the first Pages publish to complete
+   - **Important**: the workflow only pushes built files to `gh-pages`; if GitHub Pages is disabled for the repo, the Actions run can succeed while the live site still returns `404`
 
 7. **Access your site**:
    - Your site will be available at `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
    - It may take a few minutes for GitHub Pages to activate after the first deployment
+
+## Deployment Notes
+
+- This project deploys by pushing static assets to the `gh-pages` branch from `.github/workflows/github_workflows_build.yml`.
+- Merges should continue to target `main`/`master`; `gh-pages` is a generated deployment branch, not the branch for feature work.
+- A successful `Build and Deploy` run is not enough on its own. The repository must also have GitHub Pages enabled and pointed at `gh-pages`.
+- If the site suddenly returns `404` while `gh-pages` contains the expected files, check **Settings** > **Pages** before debugging the frontend.
 
 ## Customization
 
