@@ -123,7 +123,29 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+    }
+
+    .example-search-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
       margin-top: 16px;
+    }
+
+    .example-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .example-group-title {
+      color: var(--text-primary);
+      font-size: 0.95em;
+      font-weight: 600;
+    }
+
+    .example-group .example-searches {
+      margin-top: 0;
     }
 
     .example-search {
@@ -404,6 +426,10 @@
       .command {
         font-size: 0.8em;
       }
+
+      .example-search-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -464,12 +490,24 @@
     const statsDiv = document.getElementById('stats');
     const lastUpdatedSpan = document.getElementById('last-updated');
     const EXAMPLE_SEARCHES = [
-      'Git',
-      'Google Chrome',
-      'Microsoft Edge',
-      'Visual Studio Code',
-      'Docker Desktop',
-      '7-Zip'
+      {
+        title: 'Dev tools',
+        items: [
+          'Git',
+          'Visual Studio Code',
+          'Docker Desktop',
+          'Node.js',
+          'Python',
+        ],
+      },
+      {
+        title: 'Everyday apps',
+        items: [
+          'Google Chrome',
+          'Microsoft Edge',
+          '7-Zip',
+        ],
+      },
     ];
 
     // Keyboard shortcuts
@@ -591,7 +629,7 @@
 
     function updateStats(query, totalMatches, showingCount, truncated) {
       if (!query) {
-        statsDiv.textContent = `${packages.length.toLocaleString()} packages available • try an example search below`;
+        statsDiv.textContent = `${packages.length.toLocaleString()} packages available • try a common search below`;
         return;
       }
 
@@ -696,11 +734,18 @@
     function renderEmptyState() {
       return `
         <div class="empty-state">
-          <div class="empty-state-kicker">Example searches</div>
+          <div class="empty-state-kicker">Try these</div>
           <h2>Start with a common package</h2>
           <p>Search by package ID, name, publisher, description, or tag.</p>
-          <div class="example-searches">
-            ${EXAMPLE_SEARCHES.map(example => `<button type="button" class="example-search" onclick="filterBy('${escapeForSingleQuotedJs(example)}')">${escapeHtml(example)}</button>`).join('')}
+          <div class="example-search-grid">
+            ${EXAMPLE_SEARCHES.map(group => `
+              <section class="example-group" aria-label="${escapeHtml(group.title)}">
+                <div class="example-group-title">${escapeHtml(group.title)}</div>
+                <div class="example-searches">
+                  ${group.items.map(example => `<button type="button" class="example-search" onclick="filterBy('${escapeForSingleQuotedJs(example)}')">${escapeHtml(example)}</button>`).join('')}
+                </div>
+              </section>
+            `).join('')}
           </div>
           <div class="empty-state-note">You can click a publisher or tag in a result to narrow the search once results appear.</div>
         </div>
