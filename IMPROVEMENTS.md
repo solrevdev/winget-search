@@ -6,6 +6,69 @@ It is intended as a starting point for new contributors or an LLM asked to find 
 Each item notes which file(s) are affected, the effort involved, and whether the change is
 backend-only (Python / CI), frontend-only (index.html), or both.
 
+## Branch Progress Update (2026-02-26)
+
+This section tracks what is already implemented on branch `codex/frontend-search-improvements`
+so future contributors/LLMs can continue from the remaining items.
+
+### Completed In This Branch
+
+- `#1` Regex crash fix in `highlightMatch()` (escaped regex input)
+- `#5` Minified JSON output in `extract_packages.py` (`separators=(",", ":")`)
+- `#6` Ranked/weighted search scoring in frontend
+- `#7` `shortDescription` fallback in result rendering
+- `#8` Incremental result rendering with `Load more` paging
+- `#9` URL search state support (`?q=`) + back/forward handling
+- `#10` Homepage link + license badge shown in cards
+- `#11` Click-to-filter for publisher and tags
+- `#26` Removed unused `re` import and unused `is_english_manifest()` helper
+
+### Current Status By Item
+
+| # | Status on this branch | Notes / next step |
+|---|---|---|
+| 1 | Done | `highlightMatch()` now escapes regex tokens before `RegExp` creation. |
+| 2 | Open | CI cache key still uses `${{ github.run_id }}` and misses cache reuse. |
+| 3 | Open | Footer still has `YOUR_USERNAME/YOUR_REPO_NAME` placeholder URL. |
+| 4 | Open | README still has duplicated summary/malformed opening heading block. |
+| 5 | Done | `packages.json` output no longer pretty-printed. |
+| 6 | Done | Weighted ranking added; exact/prefix/id/name matches now rank higher. |
+| 7 | Done | Description fallback now uses `pkg.description || pkg.shortDescription`. |
+| 8 | Done | Results render in pages of 25 with a `Load more` button. |
+| 9 | Done | Search query is read/written from URL query string. |
+| 10 | Done | Homepage and license are rendered in result cards. |
+| 11 | Done | Publisher/tags are interactive filters feeding back into search. |
+| 12 | Open | No compact/expandable details modal yet. |
+| 13 | Open | No copy-command variants UI yet. |
+| 14 | Open | No fuzzy/typo-tolerant search dependency integrated yet. |
+| 15 | Open | No pre-built backend search index artifact yet. |
+| 16 | Open | No inferred package categories generated/displayed yet. |
+| 17 | Open | Template leftover config files still present. |
+| 18 | Open | `license.txt` still has placeholder copyright holder. |
+| 19 | Open | 404 redirect path is still hardcoded in workflow. |
+| 20 | Open | Cached winget update still resets to `origin/master`. |
+| 21 | Open | `force_pages_update.sh` still assumes return branch `master`. |
+| 22 | Open | README license link/file mismatch still unresolved. |
+| 23 | Open | README still describes stricter locale behavior than extractor implements. |
+| 24 | Open | Version fallback logic still collapses non-PEP440 versions to `0.0.0`. |
+| 25 | Open | `packages.json` tracking policy remains ambiguous. |
+| 26 | Done | Dead code/import cleanup completed in extractor. |
+
+### Suggested Next Low-Risk Work (Recommended Order)
+
+1. `#3` Replace placeholder repository URL in footer (`index.html`).
+2. `#4` Clean up duplicate README summary + malformed heading.
+3. `#22` Fix README license link mismatch (`LICENSE` vs `license.txt`).
+4. `#2` Improve CI cache key strategy (date-based key + restore keys).
+5. `#20` Make cached winget reset use detected default branch.
+6. `#19` Remove hardcoded 404 redirect repo path.
+7. `#21` Make `force_pages_update.sh` restore original branch.
+
+### Workflow Safety Note For This Branch
+
+`github_workflows_build.yml` runs on push to `main`/`master`, on schedule, and via manual dispatch.
+Pushing `codex/frontend-search-improvements` should not trigger that workflow automatically.
+
 ---
 
 ## Bugs
