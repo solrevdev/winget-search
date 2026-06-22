@@ -42,7 +42,12 @@ Visit the live site: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
    - Provides instant client-side search
    - Generates copy-ready `winget install` commands
 
-3. **Deployment**: The GitHub Actions workflow:
+3. **Machine-readable access**:
+   - Publishes the complete catalog at `packages.json`
+   - Advertises the catalog through HTML metadata and `llms.txt`
+   - Provides tested curl/jq and PowerShell examples on `agent-access.html`
+
+4. **Deployment**: The GitHub Actions workflow:
    - Builds the site and generates `packages.json`
    - Deploys directly to GitHub Pages using the `peaceiris/actions-gh-pages` action
    - GitHub Pages automatically serves the site from the deployment
@@ -211,6 +216,8 @@ After starting the server, open `http://localhost:8000` in your browser.
 │       └── github_workflows_pages_deploy.yml  # Manual trigger for re-deployment
 ├── extract_packages.py    # Package extraction script
 ├── index.html            # Search interface
+├── agent-access.html     # Human-readable catalog query guide
+├── llms.txt              # Machine-readable agent instructions
 ├── packages.json         # Generated package data (not in source)
 ├── requirements.txt      # Python dependencies (pip)
 ├── pyproject.toml        # Modern Python project config (uv)

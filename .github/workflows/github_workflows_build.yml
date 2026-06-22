@@ -89,6 +89,8 @@ jobs:
                   
                   # Copy files (overwrite if exists)
                   cp index.html deploy/
+                  cp agent-access.html deploy/
+                  cp llms.txt deploy/
                   cp packages.json deploy/
                   
                   # Create .nojekyll to prevent Jekyll processing

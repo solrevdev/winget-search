@@ -3,7 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
   <title>Winget Package Search</title>
+  <link rel="help" type="text/plain" href="llms.txt" title="Agent access instructions">
+  <link rel="alternate" type="application/json" href="packages.json" title="Winget package catalog">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Dataset",
+      "name": "Winget Package Search catalog",
+      "description": "Current package metadata extracted from microsoft/winget-pkgs.",
+      "url": "https://solrevdev.com/winget-search/",
+      "isBasedOn": "https://github.com/microsoft/winget-pkgs",
+      "distribution": {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://solrevdev.com/winget-search/packages.json"
+      }
+    }
+  </script>
   <style>
     :root {
       --bg-primary: #ffffff;
@@ -495,7 +513,8 @@
       <span id="last-updated"></span>
     </p>
     <p>
-      <a href="https://github.com/YOUR_USERNAME/YOUR_REPO_NAME" target="_blank" rel="noopener">View source on GitHub</a> • 
+      <a href="https://github.com/solrevdev/winget-search" target="_blank" rel="noopener">View source on GitHub</a> •
+      <a href="agent-access.html">API &amp; agent access</a> •
       <a href="https://learn.microsoft.com/en-us/windows/package-manager/" target="_blank" rel="noopener">Winget Documentation</a>
     </p>
   </footer>
