@@ -5,8 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
   <title>Winget Package Search</title>
+  <link rel="canonical" href="https://solrevdev.com/winget-search/">
+  <link rel="sitemap" type="application/xml" href="sitemap.xml">
   <link rel="help" type="text/plain" href="llms.txt" title="Agent access instructions">
   <link rel="alternate" type="application/json" href="packages.json" title="Winget package catalog">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Winget Package Search">
+  <meta property="og:title" content="Winget Package Search">
+  <meta property="og:description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
+  <meta property="og:url" content="https://solrevdev.com/winget-search/">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@solrevdev">
+  <meta name="twitter:creator" content="@solrevdev">
+  <meta name="twitter:title" content="Winget Package Search">
+  <meta name="twitter:description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -26,6 +40,9 @@
         "url": "https://solrevdev.com/about/"
       },
       "license": "https://spdx.org/licenses/MIT.html",
+      "sameAs": "https://github.com/solrevdev/winget-search",
+      "numberOfItems": 0,
+      "variableMeasured": ["packageId", "name", "version", "publisher"],
       "distribution": {
         "@type": "DataDownload",
         "encodingFormat": "application/json",
