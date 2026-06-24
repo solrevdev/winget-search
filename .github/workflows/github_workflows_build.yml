@@ -89,6 +89,8 @@ jobs:
                   
                   # Copy files (overwrite if exists)
                   cp index.html deploy/
+                  # Stamp dateModified with today's date so Dataset structured data stays current
+                  sed -i "s/\"dateModified\": \"[^\"]*\"/\"dateModified\": \"$(date -u +%Y-%m-%d)\"/" deploy/index.html
                   cp agent-access.html deploy/
                   cp llms.txt deploy/
                   cp packages.json deploy/
