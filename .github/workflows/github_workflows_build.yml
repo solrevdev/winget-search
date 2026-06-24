@@ -89,11 +89,22 @@ jobs:
                   
                   # Copy files (overwrite if exists)
                   cp index.html deploy/
-                  # Stamp dateModified with today's date so Dataset structured data stays current
-                  sed -i "s/\"dateModified\": \"[^\"]*\"/\"dateModified\": \"$(date -u +%Y-%m-%d)\"/" deploy/index.html
                   cp agent-access.html deploy/
                   cp llms.txt deploy/
+                  cp og-image.png deploy/
+                  cp og-image.svg deploy/
                   cp packages.json deploy/
+                  cp sitemap.xml deploy/
+
+                  # Stamp dateModified with today's date so Dataset structured data stays current
+                  sed -i "s/\"dateModified\": \"[^\"]*\"/\"dateModified\": \"$(date -u +%Y-%m-%d)\"/" deploy/index.html
+
+                  # Stamp numberOfItems with the actual package count from packages.json
+                  PACKAGE_COUNT=$(jq '.metadata.total // length' packages.json)
+                  sed -i "s/\"numberOfItems\": [0-9]*/\"numberOfItems\": ${PACKAGE_COUNT}/" deploy/index.html
+
+                  # Stamp sitemap lastmod with today's date
+                  sed -i "s/<lastmod>[^<]*<\/lastmod>/<lastmod>$(date -u +%Y-%m-%d)<\/lastmod>/g" deploy/sitemap.xml
                   
                   # Create .nojekyll to prevent Jekyll processing
                   touch deploy/.nojekyll
