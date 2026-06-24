@@ -91,6 +91,8 @@ jobs:
                   cp index.html deploy/
                   cp agent-access.html deploy/
                   cp llms.txt deploy/
+                  cp og-image.png deploy/
+                  cp og-image.svg deploy/
                   cp packages.json deploy/
                   cp sitemap.xml deploy/
 
