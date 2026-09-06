@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Query the Winget Package Search catalog from command-line tools and coding agents.">
+  <title>API &amp; Agent Access · Winget Package Search</title>
+  <link rel="help" type="text/plain" href="llms.txt" title="Agent access instructions">
+  <link rel="alternate" type="application/json" href="packages.json" title="Winget package catalog">
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --text-primary: #212529;
+      --text-secondary: #6c757d;
+      --border-color: #dee2e6;
+      --accent-color: #0066cc;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --text-primary: #e9ecef;
+        --text-secondary: #adb5bd;
+        --border-color: #495057;
+        --accent-color: #4dabf7;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent-color); }
+    h1 { margin-bottom: 8px; }
+    h2 { margin-top: 32px; }
+
+    .subtitle, .note { color: var(--text-secondary); }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      text-decoration: none;
+    }
+
+    .endpoint, .note {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      padding: 14px 16px;
+    }
+
+    code, pre {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+    }
+
+    code {
+      overflow-wrap: anywhere;
+    }
+
+    pre {
+      overflow-x: auto;
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <a class="back-link" href="index.html">← Back to package search</a>
+  <main>
+    <h1>API &amp; agent access</h1>
+    <p class="subtitle">Query the same package catalog used by the browser interface.</p>
+
+    <p class="note">
+      This is a static GitHub Pages site, not a server-side search API. Query parameters such as
+      <code>?q=nssm</code> are handled by JavaScript in a browser. Scripts and agents should download
+      the catalog and search it locally.
+    </p>
+
+    <h2>Catalog endpoint</h2>
+    <p class="endpoint">
+      <a href="packages.json"><code>https://solrevdev.com/winget-search/packages.json</code></a>
+    </p>
+    <p>
+      The response contains extraction metadata and a <code>packages</code> array. Package records include
+      the ID, name, publisher, version, descriptions, tags, homepage, and license. Some values may be null.
+    </p>
+
+    <h2>macOS and Linux</h2>
+    <p>Requires <code>curl</code> and <code>jq</code>. Download once, then change <code>query</code> for additional searches.</p>
+    <pre><code>curl -fsSL https://solrevdev.com/winget-search/packages.json -o packages.json
+
+query='nssm'
+jq --arg q "$query" '
+  .packages
+  | map(select(
+      [.id, .name, .publisher, .description, ((.tags // []) | join(" "))]
+      | map(. // "")
+      | join(" ")
+      | ascii_downcase
+      | contains($q | ascii_downcase)
+    ))
+  | .[:10]
+  | map({id, name, version, publisher})
+' packages.json</code></pre>
+
+    <h2>Windows PowerShell and PowerShell 7+</h2>
+    <p>This example is compatible with Windows PowerShell 5.1 and cross-platform PowerShell 7 or later.</p>
+    <pre><code>$catalog = Invoke-RestMethod -Uri 'https://solrevdev.com/winget-search/packages.json'
+$query = 'nssm'
+
+$catalog.packages |
+  Where-Object {
+    $text = (@($_.id, $_.name, $_.publisher, $_.description) + @($_.tags) |
+      Where-Object { $_ } |
+      ForEach-Object { [string]$_ }) -join ' '
+    $text.IndexOf($query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+  } |
+  Select-Object -First 10 id, name, version, publisher</code></pre>
+
+    <h2>Create install commands</h2>
+    <p>After filtering results in either shell, use the exact package ID:</p>
+    <pre><code>winget install -e --id NSSM.NSSM</code></pre>
+    <p>
+      Machine-oriented instructions are also available in <a href="llms.txt"><code>llms.txt</code></a>.
+    </p>
+  </main>
+  <footer>
+    Catalog data is extracted daily from
+    <a href="https://github.com/microsoft/winget-pkgs">microsoft/winget-pkgs</a>.
+  </footer>
+</body>
+</html>

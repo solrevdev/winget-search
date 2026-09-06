@@ -1,0 +1,68 @@
+# Winget Package Search
+
+> Searchable package metadata extracted daily from microsoft/winget-pkgs.
+
+Canonical site: https://solrevdev.com/winget-search/
+Package catalog: https://solrevdev.com/winget-search/packages.json
+Human query guide: https://solrevdev.com/winget-search/agent-access.html
+Source repository: https://github.com/solrevdev/winget-search
+
+## Important behavior
+
+The website is a static JavaScript application hosted on GitHub Pages. A URL such as
+`/?q=nssm` returns the application HTML; search results are rendered in the browser.
+Non-browser agents should download `packages.json` and query it locally.
+
+## Catalog shape
+
+The JSON document contains:
+
+- `metadata.total`: package count
+- `metadata.extracted_at`: extraction timestamp
+- `metadata.source`: upstream source
+- `packages`: array of package records
+
+Package fields are `id`, `name`, `description`, `publisher`, `version`,
+`shortDescription`, `tags`, `homepage`, and `license`. Some values may be null.
+
+Use the exact package ID to construct an install command:
+
+`winget install -e --id <PACKAGE_ID>`
+
+## Query examples
+
+macOS/Linux with curl and jq:
+
+```sh
+curl -fsSL https://solrevdev.com/winget-search/packages.json -o packages.json
+query='nssm'
+jq --arg q "$query" '
+  .packages
+  | map(select(
+      [.id, .name, .publisher, .description, ((.tags // []) | join(" "))]
+      | map(. // "")
+      | join(" ")
+      | ascii_downcase
+      | contains($q | ascii_downcase)
+    ))
+  | .[:10]
+  | map({id, name, version, publisher})
+' packages.json
+```
+
+Windows PowerShell 5.1 and PowerShell 7+:
+
+```powershell
+$catalog = Invoke-RestMethod -Uri 'https://solrevdev.com/winget-search/packages.json'
+$query = 'nssm'
+$catalog.packages |
+  Where-Object {
+    $text = (@($_.id, $_.name, $_.publisher, $_.description) + @($_.tags) |
+      Where-Object { $_ } |
+      ForEach-Object { [string]$_ }) -join ' '
+    $text.IndexOf($query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+  } |
+  Select-Object -First 10 id, name, version, publisher
+```
+
+Download the catalog once and reuse it when performing several searches.
