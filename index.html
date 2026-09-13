@@ -5,8 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
   <title>Winget Package Search</title>
+  <link rel="canonical" href="https://solrevdev.com/winget-search/">
+  <link rel="sitemap" type="application/xml" href="sitemap.xml">
   <link rel="help" type="text/plain" href="llms.txt" title="Agent access instructions">
   <link rel="alternate" type="application/json" href="packages.json" title="Winget package catalog">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Winget Package Search">
+  <meta property="og:title" content="Winget Package Search">
+  <meta property="og:description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
+  <meta property="og:url" content="https://solrevdev.com/winget-search/">
+  <meta property="og:image" content="https://solrevdev.com/winget-search/og-image.png">
+  <meta property="og:image:secure_url" content="https://solrevdev.com/winget-search/og-image.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Winget Package Search preview with a search box and winget install command.">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@solrevdev">
+  <meta name="twitter:creator" content="@solrevdev">
+  <meta name="twitter:title" content="Winget Package Search">
+  <meta name="twitter:description" content="Search current Windows Package Manager packages and copy exact winget install commands.">
+  <meta name="twitter:image" content="https://solrevdev.com/winget-search/og-image.png">
+  <meta name="twitter:image:alt" content="Winget Package Search preview with a search box and winget install command.">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -17,15 +39,13 @@
       "isBasedOn": "https://github.com/microsoft/winget-pkgs",
       "keywords": ["winget", "Windows Package Manager", "package search", "software catalog", "Windows software", "package manager"],
       "inLanguage": "en",
-      "temporalCoverage": "2025-05-29/..",
-      "datePublished": "2025-05-29",
-      "dateModified": "2025-05-29",
       "creator": {
         "@type": "Person",
         "name": "John Smith",
-        "url": "https://solrevdev.com/about/"
+        "url": "https://github.com/solrevdev"
       },
       "license": "https://spdx.org/licenses/MIT.html",
+      "variableMeasured": ["id", "name", "version", "publisher"],
       "distribution": {
         "@type": "DataDownload",
         "encodingFormat": "application/json",
@@ -38,10 +58,10 @@
       --bg-primary: #ffffff;
       --bg-secondary: #f8f9fa;
       --text-primary: #212529;
-      --text-secondary: #6c757d;
+      --text-secondary: #59636d;
       --border-color: #dee2e6;
       --accent-color: #0066cc;
-      --success-color: #28a745;
+      --success-color: #1f7a35;
       --hover-bg: #f0f0f0;
     }
 
@@ -72,6 +92,22 @@
       line-height: 1.6;
     }
 
+    .skip-link {
+      position: absolute;
+      top: -100px;
+      left: 20px;
+      z-index: 1;
+      padding: 8px 12px;
+      border: 2px solid var(--accent-color);
+      border-radius: 6px;
+      background: var(--bg-primary);
+      color: var(--accent-color);
+    }
+
+    .skip-link:focus {
+      top: 8px;
+    }
+
     h1 {
       margin-bottom: 10px;
       display: flex;
@@ -82,6 +118,11 @@
     .subtitle {
       color: var(--text-secondary);
       font-size: 0.9em;
+      margin: 0;
+    }
+
+    #catalog-summary {
+      margin-top: 4px;
       margin-bottom: 20px;
     }
 
@@ -307,6 +348,7 @@
     }
 
     .pkg-name {
+      margin: 0;
       font-weight: 600;
       font-size: 1.1em;
       color: var(--text-primary);
@@ -465,13 +507,13 @@
 
     .copy-btn:hover {
       background-color: var(--accent-color);
-      color: white;
+      color: var(--bg-primary);
       border-color: var(--accent-color);
     }
 
     .copy-btn.success {
       background-color: var(--success-color);
-      color: white;
+      color: var(--bg-primary);
       border-color: var(--success-color);
     }
 
@@ -483,8 +525,8 @@
       border: 1px solid var(--border-color);
       flex: 1;
       min-width: 0;
-      overflow-x: auto;
-      white-space: nowrap;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
       font-size: 0.9em;
     }
 
@@ -505,12 +547,9 @@
 
     .footer a {
       color: var(--accent-color);
-      text-decoration: none;
-    }
-
-    .footer a:hover {
       text-decoration: underline;
     }
+
 
     .keyboard-hint {
       font-size: 0.8em;
@@ -567,40 +606,46 @@
   </style>
 </head>
 <body>
-  <h1>
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="currentColor">
-      <path d="M16 2L2 7v10c0 8.84 7.16 14 14 14s14-5.16 14-14V7L16 2z"/>
-    </svg>
-    Winget Package Search
-  </h1>
-  <div class="subtitle">Search and install Windows Package Manager packages</div>
-  
-  <div class="search-container">
-    <input 
-      type="text" 
-      id="search"
-      aria-label="Search packages"
-      placeholder="Search by package name, ID, or description..." 
-      autocomplete="off"
-      autofocus
-      disabled
-    >
-    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="M21 21l-4.35-4.35"/>
-    </svg>
-  </div>
-  
-  <div class="keyboard-hint">Press <kbd>/</kbd> to focus search • <kbd>Esc</kbd> to clear</div>
-  
-  <div id="active-filters" class="active-filters" role="group" aria-label="Active filters"></div>
-  <div id="search-note" class="search-note"></div>
-  <div id="stats" class="stats" role="status" aria-live="polite"></div>
-  
-  <div id="loading" class="loading">Loading packages...</div>
-  <div id="error" class="error" style="display: none;"></div>
-  <div id="results"></div>
-  
+  <a class="skip-link" href="#main-content">Skip to search</a>
+  <header>
+    <h1>
+      <svg aria-hidden="true" focusable="false" width="32" height="32" viewBox="0 0 32 32" fill="currentColor">
+        <path d="M16 2L2 7v10c0 8.84 7.16 14 14 14s14-5.16 14-14V7L16 2z"/>
+      </svg>
+      Winget Package Search
+    </h1>
+    <p class="subtitle">Search and install Windows Package Manager packages</p>
+    <p id="catalog-summary" class="subtitle">Current package metadata extracted from microsoft/winget-pkgs.</p>
+  </header>
+
+  <main id="main-content" tabindex="-1">
+    <div class="search-container">
+      <input
+        type="text"
+        id="search"
+        aria-label="Search packages"
+        placeholder="Search by package name, ID, or description..."
+        autocomplete="off"
+        autofocus
+        disabled
+      >
+      <svg aria-hidden="true" focusable="false" class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+    </div>
+
+    <div class="keyboard-hint">Press <kbd>/</kbd> to focus search • <kbd>Esc</kbd> to clear</div>
+
+    <div id="active-filters" class="active-filters" role="group" aria-label="Active filters"></div>
+    <div id="search-note" class="search-note"></div>
+    <div id="stats" class="stats" role="status" aria-live="polite"></div>
+
+    <div id="loading" class="loading">Loading packages...</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="results"></div>
+  </main>
+
   <footer class="footer">
     <p>
       Data auto-extracted from <a href="https://github.com/microsoft/winget-pkgs" target="_blank" rel="noopener">microsoft/winget-pkgs</a>
@@ -870,7 +915,7 @@
         <div class="pkg">
           <div class="pkg-header">
             <div class="pkg-title">
-              <span class="pkg-name">${highlightMatch(pkg.name || pkg.id, query)}</span>
+              <h2 class="pkg-name">${highlightMatch(pkg.name || pkg.id, query)}</h2>
               <span class="pkg-id">${highlightMatch(pkg.id, query)}</span>
             </div>
             <div class="pkg-badges">
@@ -881,7 +926,7 @@
           <div class="copy-section">
             <code class="command">${escapeHtml(command)}</code>
             <button type="button" class="copy-btn" data-copy-command="${escapeAttribute(command)}" aria-label="Copy install command for ${escapeAttribute(pkg.name || pkg.id)}">
-              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
               </svg>
@@ -1006,7 +1051,7 @@
         const originalHtml = button.innerHTML;
         button.classList.add('success');
         button.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
           Copied!

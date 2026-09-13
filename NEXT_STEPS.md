@@ -111,36 +111,60 @@ and search stays in the browser. The catalog endpoint and existing `?q=` links r
 SEO and deployment maintenance remain separate changes. The findings below define
 their scope; this search batch does not implement them or close their issues.
 
-### PR #5 and issue #1: one SEO change
+### PR #5 and issue #1: SEO ready for review
 
-[PR #5](https://github.com/solrevdev/winget-search/pull/5) remains open at
-`949eec26e58f8f392d505a4cabba752264d3da94`. After PR #7 merged, GitHub reports
-merge conflicts with `master`; resolve them as part of the next SEO batch. Preserve
-`feat/seo-meta-sitemap-dataset` and complete the useful issue #1 work there.
+[PR #5](https://github.com/solrevdev/winget-search/pull/5) remains on
+`feat/seo-meta-sitemap-dataset`. Conflict repair `c5de9d1` merged master `35bed66`
+and passed CI. The user approved the SEO scope on 2026-09-13. The implementation
+is complete and awaiting review and merge approval. Nothing has deployed from
+this batch; issues #1 and #4 remain open.
 
-- Canonical and social metadata are absent from the live homepage. PR #5 supplies
-  these, including a PNG preview and its SVG source. Its description is stale:
-  it still lists the image as future work despite including it in the diff.
-- The count stamp reads the correct `metadata.total` field. Validate it against
-  the actual array length. Change `variableMeasured` from `packageId` to `id`.
-  Review the count representation: Schema.org defines `numberOfItems` for
-  [ItemList](https://schema.org/numberOfItems), not Dataset.
-- Use catalog freshness for Dataset dates and meaningful page-change dates for
-  sitemap entries. Do not stamp an unchanged agent-access page with every build's
-  date. [Google's sitemap guidance](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)
-  calls for accurate last-modified dates and ignores priority/change frequency.
-- The homepage already has a title, description, h1, and footer. Add useful
-  header/main landmarks, result headings, and appropriate treatment of decorative
-  SVGs. This search batch adds an explicit search label. Keep the PNG's social alt
-  descriptions. Do not add
-  the issue's keyword meta tag: [Google ignores it](https://developers.google.com/search/docs/crawling-indexing/special-tags).
-- Share a single public-base-URL rule with issue #4's generated redirect. Validate
-  project paths and custom-domain paths together with canonical and sitemap URLs.
-- Validate generated HTML, JSON-LD, sitemap, and preview assets before review.
-  After an approved merge, verify both deployment stages and the live output.
-  Search Console submission and the old validation status still need a separate
-  account check. Keep issue #1 open until its remaining criteria are resolved and
-  the deployed result is verified.
+- `build_site.py` replaces shell stamps with a tested static build. One explicit
+  HTTPS directory URL in `site_config.json` drives canonical/social metadata,
+  Dataset download, sitemap, guide examples, and the generated 404 destination.
+  Custom roots/subpaths and GitHub Pages user/project paths are covered. This
+  completes the redirect portion of issue #4, subject to release verification.
+- The build rejects empty/invalid catalogs and count mismatches. The preview used
+  14,836 records and `2026-09-13T18:17:57.426295Z`, matching the live download.
+  Dataset description and visible summary show the actual count; `dateModified`
+  uses extraction time. `variableMeasured` uses `id`, not `packageId`.
+- Removed Dataset `numberOfItems`, unsupported historical coverage/publication
+  dates, and the repository-as-Dataset `sameAs` claim. John Smith matches the
+  public owner profile; creator points to that profile. The MIT catalog license
+  stays and does not describe individual software licenses.
+- Sitemap dates use significant source/catalog changes, with no daily date stamp
+  for an unchanged agent page. Unknown source dates are omitted. No `priority`,
+  `changefreq`, or keywords meta tag is added. See [SEO.md](SEO.md) for primary
+  guidance, public URL rules, and Search Console follow-up.
+- Added header/main landmarks, skip links, package headings, hidden decorative
+  SVGs, stronger text/button contrast, underlined footer links, wrapped install
+  commands, and keyboard scrolling for guide code examples. The 1200 × 630 PNG
+  was regenerated from its SVG after fixing overflowing caption text.
+- All 38 Node regressions and all nine extraction tests pass, plus ten new Python
+  build tests (19 Python total). Generated homepage, agent page, and 404 pass
+  html-validate 11.15.0's HTML standard preset; JSON-LD/XML/PNG/SVG and workflow YAML
+  checks pass. Search engine, extractor, vendor assets and catalog bytes remain
+  unchanged. No required runtime service or app dependency was added.
+- Saved search and SEO browser suites pass at 1280px and 375px with no uncaught
+  exceptions. Checks cover ranking, URLs/history, filters, copy, Details, paging,
+  empty/error recovery, landmarks, metadata, static count/freshness, keyboard
+  navigation and overflow. Screenshots were inspected. Axe 4.13.0 reports zero
+  violations in eight light/dark desktop/mobile page checks and four Copy
+  hover/success checks after contrast and keyboard fixes. This is automated plus
+  keyboard review, not a claim of full assistive-technology certification.
+
+Keep this existing PR and branch. Start the later maintenance branch from synced
+master after PR #5 merges, reuse the URL rule, and recheck mergeability at every
+handoff. No separate competing SEO PR is needed. Future master edits can still
+introduce conflicts.
+
+After approval: merge, verify both Build and Deploy and Pages publication, then
+verify live metadata/counts/dates, sitemap, preview image, redirect and search.
+Only then remove the completed feature branch and sync master. Search Console
+still requires an account check: confirm sitemap submission and indexing, inspect
+both page URLs, and check the old creator/license validation status. Run Rich
+Results Test against the deployed homepage. Keep issue #1 open until the required
+live and account checks pass.
 
 ### Issue #4: deployment and documentation follow-up
 
@@ -153,8 +177,9 @@ merge conflicts with `master`; resolve them as part of the next SEO batch. Prese
 - Trial a versioned UTC daily key with prefix restore. Always run upstream
   checkout so both exact and prefix restores refresh. Remove the separate update
   step that assumes `origin/master`.
-- Generate the 404 destination using the public URL rule established with PR #5.
-  Test project paths, user-site roots, and custom domains.
+- PR #5 implements the shared URL rule and generated 404 destination, with
+  project/user-site/custom-domain tests. Reuse that builder after PR #5 merges;
+  do not reimplement or revert its redirect logic in the maintenance PR.
 - Make `force_pages_update.sh` restore the starting branch on success and failure,
   reject dirty worktrees, use fast-forward-only updates, and stage only intended
   files. Test success and fetch/push failures with temporary local Git remotes.
@@ -178,6 +203,10 @@ running resources.
 
 | Resource | Owner and location | Status |
 | --- | --- | --- |
+| Playwright `winget-seo-pr5` | PR #5 parent; PID 66266; open exec session 51766; `http://127.0.0.1:8765/winget-search/`; screenshots/logs in `.playwright-cli/` | Passed and closed 2026-09-13; PID and session checked; search suite sessions 32055 and 89714 completed |
+| SEO preview server, PID 66230 | PR #5 parent; exec session 12065; port 8765; `http://127.0.0.1:8765/winget-search/`; `/private/tmp/winget-seo-pr5-20260913/preview` | Stopped 2026-09-13; PID and port checked |
+| SEO review files | PR #5 parent; `/private/tmp/winget-seo-pr5-20260913`; catalog, generated previews, isolated validation tools/npm cache and evidence; no port or browser yet | Inert files; live catalog has 14,836 records |
+| Validation tool install | PR #5 parent; exec session 48988; `/private/tmp/winget-seo-pr5-20260913/tools` and `npm-cache`; no port/browser | Completed; axe-core 4.13.0 and html-validate 11.15.0 installed; no process remains |
 | Preview server, PID 62533 | PR #7; port 8765; `http://127.0.0.1:8765/winget-search/`; `/private/tmp/winget-preview`; exec session 32615 | Stopped 2026-09-13; port checked |
 | Staged preview server, PID 63164 | PR #7; port 8766; `http://127.0.0.1:8766/winget-search/`; `/private/tmp/winget-review-preview`; exec session 57935 | Stopped 2026-09-13; port checked |
 | Playwright `winget-search` | PR #7 desktop/mobile-width checks | Closed 2026-09-13 |
@@ -185,9 +214,17 @@ running resources.
 | Playwright `winget-release-check`, PID 63851 | PR #7 public deployment verification; `https://solrevdev.com/winget-search/`; no local server | Passed and closed 2026-09-13; PID checked |
 
 Preview directories and `.playwright-cli/` screenshots/logs are inert evidence.
+PR #5 also retains JSON test results and isolated validation tools under
+`/private/tmp/winget-seo-pr5-20260913`. All PR #5 task resources are stopped;
+no active browser, preview server or background test remains.
 No task-owned servers or Playwright sessions remain active. Verified with
 `playwright-cli list`, process checks, and listener checks on ports 8765 and 8766.
 Unrelated services were left running.
+
+PR #5 conflict repair (2026-09-13): no servers, browser sessions, background
+processes, or temporary previews started. The read-only SEO scope subagent owns
+review findings only and reports any resources to the parent. Its review is complete. Build and markup subagents started no servers or
+browsers; their Python test fixture directories were cleaned automatically.
 
 ## Following batches
 

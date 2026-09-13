@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- build_site.py supplies public URLs and dates from catalog and Git history. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>{{PUBLIC_BASE_URL}}</loc>
+  </url>
+  <url>
+    <loc>{{AGENT_URL}}</loc>
+  </url>
+</urlset>

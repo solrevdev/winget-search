@@ -27,6 +27,8 @@ jobs:
         steps:
             - name: Checkout this repo
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
             - name: Cache winget-pkgs repo
               uses: actions/cache@v4
@@ -82,29 +84,8 @@ jobs:
                   
                   echo "Successfully created packages.json (${size} bytes)"
 
-            - name: Copy site assets
-              run: |
-                  # Create a deployment directory
-                  mkdir -p deploy
-                  
-                  # Copy files (overwrite if exists)
-                  cp index.html deploy/
-                  cp search.js deploy/
-                  cp -R vendor deploy/
-                  # Stamp dateModified with today's date so Dataset structured data stays current
-                  sed -i "s/\"dateModified\": \"[^\"]*\"/\"dateModified\": \"$(date -u +%Y-%m-%d)\"/" deploy/index.html
-                  cp agent-access.html deploy/
-                  cp llms.txt deploy/
-                  cp packages.json deploy/
-                  
-                  # Create .nojekyll to prevent Jekyll processing
-                  touch deploy/.nojekyll
-                  
-                  # Create a simple 404 page
-                  echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=/winget-search/"></head></html>' > deploy/404.html
-                  
-                  # Create a CNAME file if you're using a custom domain
-                  # echo "your-custom-domain.com" > deploy/CNAME
+            - name: Build site assets and metadata
+              run: python build_site.py --output-dir deploy
 
             - name: Deploy to GitHub Pages
               uses: peaceiris/actions-gh-pages@v4
@@ -142,4 +123,4 @@ jobs:
                   echo "- **File size**: $(stat -c%s packages.json | numfmt --to=iec-i --suffix=B)" >> $GITHUB_STEP_SUMMARY
                   echo "- **Run number**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
                   echo "" >> $GITHUB_STEP_SUMMARY
-                  echo "Visit the site at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+                  python -c 'import json; print("Visit the site at: " + json.load(open("site_config.json"))["public_base_url"])' >> "$GITHUB_STEP_SUMMARY"
