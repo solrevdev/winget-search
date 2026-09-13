@@ -69,17 +69,43 @@ Acceptance examples:
    and architecture filters, command variants, and recent searches after the core
    search and selection flows work well. Installer filters require new extracted data.
 
-## Existing maintenance work
+## Agreed investigation and completion work
 
-- [Issue #4](https://github.com/solrevdev/winget-search/issues/4): README duplication,
-  license filename mismatch, cache/update logic, hardcoded branch and redirect paths,
-  and returning to the original branch in `force_pages_update.sh`. The footer link
-  is already fixed. Cache restore keys exist; inspect actual reuse and checkout
-  conditions rather than assuming every restore misses.
-- [Issue #1](https://github.com/solrevdev/winget-search/issues/1) overlaps with open
-  [PR #5](https://github.com/solrevdev/winget-search/pull/5), which adds social metadata,
-  a sitemap and Dataset fields. Review it before starting another SEO change. Keep
-  its `feat/seo-meta-sitemap-dataset` branch while that PR is open.
+These are explicit roadmap tasks, alongside the search batches above. Investigate
+each against current `master`, finish the remaining useful work, and record what
+shipped or why an item no longer applies. Do not treat this list as a reason to
+merge old code without review.
+
+1. **Investigate and, if suitable, complete
+   [PR #5](https://github.com/solrevdev/winget-search/pull/5).** Review the current
+   diff, checks and merge conflicts after PR #6. Verify its Open Graph/Twitter tags,
+   canonical URL, sitemap and Dataset fields against the deployed site and current
+   data schema. Fix any remaining problems and validate the generated output before
+   merging and deploying. Confirm live structured data has the actual package count
+   and the sitemap has valid public URLs and dates. Check whether Search Console
+   submission or validation still needs a separate follow-up. Keep its
+   `feat/seo-meta-sitemap-dataset` branch until the PR is merged or otherwise resolved;
+   clean it up only then.
+2. **Investigate and complete
+   [issue #4](https://github.com/solrevdev/winget-search/issues/4).** Reconcile every
+   acceptance criterion with the current code. The footer link is already fixed.
+   Address remaining README duplication and license filename mismatch, cache/update
+   logic, default-branch detection, generated redirect paths, and restoring the
+   original branch in `force_pages_update.sh`. Cache restore keys exist; inspect
+   actual reuse and checkout conditions rather than assuming every restore misses.
+   Verify workflow and helper-script behavior, preserve Pages deployment, and close
+   the issue only when the remaining criteria are met or explicitly resolved.
+3. **Investigate and complete
+   [issue #1](https://github.com/solrevdev/winget-search/issues/1).** Coordinate with
+   PR #5 to avoid duplicate SEO work. Check the title, description, semantic elements,
+   heading order, image alt text and social metadata against the live page. Assess
+   the issue's older suggestions against current search-engine guidance. Complete
+   useful gaps and record any suggestions that no longer apply. Verify the deployed
+   result before closing the issue; merging PR #5 alone does not prove the whole
+   issue is complete.
+
+## Other maintenance work
+
 - `IMPROVEMENTS.md` #24: non-PEP440 versions currently fall back to `0.0.0`. This can
   choose the wrong latest version. Fix with representative upstream version tests.
 - Keep timestamps and catalog health visible; consider failing a build on a major
