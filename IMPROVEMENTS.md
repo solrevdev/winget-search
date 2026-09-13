@@ -3,6 +3,8 @@
 This document captures known bugs, quick wins, and feature ideas for the winget-search project.
 It is intended as a starting point for new contributors or an LLM asked to find work to do.
 
+Start with [NEXT_STEPS.md](NEXT_STEPS.md) for the current plan and session handoff.
+
 Each item notes which file(s) are affected, the effort involved, and whether the change is
 backend-only (Python / CI), frontend-only (index.html), or both.
 
