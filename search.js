@@ -144,7 +144,12 @@
         .map(pkg => ({ pkg, score: scorePackage(pkg, normalized, tokens) }))
         .filter(result => result.score > 0)
         .sort((a, b) => b.score - a.score || compareIds(a.pkg, b.pkg));
-      if (ordinary.length || !tokens.some(token => fuzzyDistance(token))) {
+      // Incidental metadata matches must not block corrections to package identities.
+      const hasIdentityMatch = ordinary.some(({ pkg }) => {
+        const identity = `${pkg.id ?? ''} ${pkg.name ?? ''} ${pkg.moniker ?? ''}`.toLowerCase();
+        return tokens.every(token => identity.includes(token));
+      });
+      if (hasIdentityMatch || !tokens.some(token => fuzzyDistance(token))) {
         return { results: ordinary.map(result => result.pkg), fuzzy: false };
       }
 
@@ -156,7 +161,10 @@
         filter: result => allowed(packages[result.id]),
       });
       matches.sort((a, b) => b.score - a.score || compareIds(packages[a.id], packages[b.id]));
-      return { results: matches.map(result => packages[result.id]), fuzzy: matches.length > 0 };
+      const similar = matches.map(result => packages[result.id]);
+      const seen = new Set(similar);
+      const remaining = ordinary.map(result => result.pkg).filter(pkg => !seen.has(pkg));
+      return { results: [...similar, ...remaining], fuzzy: similar.length > 0 };
     }
 
     return { search };

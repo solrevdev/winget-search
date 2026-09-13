@@ -1017,7 +1017,7 @@
       lastMatchCount = result.results.length;
       currentResults = result.results.slice(0, MAX_SEARCH_RESULTS);
       visibleCount = Math.min(PAGE_SIZE, currentResults.length);
-      searchNote.textContent = result.fuzzy ? 'No exact text matches. Showing similar package names and IDs.' : '';
+      searchNote.textContent = result.fuzzy ? 'Showing similar package names, IDs and monikers first.' : '';
       updateStats(trimmedQuery, lastMatchCount, visibleCount);
       renderResults(trimmedQuery);
     }

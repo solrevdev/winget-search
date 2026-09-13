@@ -13,7 +13,7 @@ const catalog = [
   { id: 'D.Tool', name: 'Tool', publisher: 'Acme', tags: ['tools'] },
 ];
 
-function setup(search = '') {
+function setup(search = '', entries = catalog) {
   const elements = new Map();
   const events = {};
   const timers = new Map();
@@ -53,7 +53,7 @@ function setup(search = '') {
     clearTimeout(id) { timers.delete(id); },
   });
   vm.runInContext(script, context);
-  context.catalog = catalog;
+  context.catalog = entries;
   vm.runInContext('packages = catalog; searchEngine = WingetSearch.createEngine(packages); restoreSearchState();', context);
   return {
     context, elements, window, stack, events,
@@ -148,6 +148,20 @@ test('filter-only empty state explains how to recover', () => {
   const ui = setup('?publisher=missing');
   assert.equal(ui.elements.get('stats').textContent, '0 matches with these filters');
   assert.match(ui.elements.get('results').innerHTML, /Remove a filter/);
+});
+
+test('mixed fuzzy and metadata results show accurate totals and clear the note after a literal search', () => {
+  const ui = setup('?q=visual+stdio', [
+    { id: 'AQBot.AQBot', name: 'AQBot', description: 'Visual display; stdio transport' },
+    { id: 'Microsoft.VisualStudioCode', name: 'Visual Studio Code' },
+  ]);
+  assert.deepEqual(ui.ids(), ['Microsoft.VisualStudioCode', 'AQBot.AQBot']);
+  assert.equal(ui.elements.get('stats').textContent, 'Showing 2 of 2 matches');
+  assert.match(ui.elements.get('search-note').textContent, /similar package names, IDs and monikers/);
+  assert.doesNotMatch(ui.elements.get('search-note').textContent, /No exact text matches/);
+  ui.type('Visual Studio'); ui.flush();
+  assert.deepEqual(ui.ids(), ['Microsoft.VisualStudioCode']);
+  assert.equal(ui.elements.get('search-note').textContent, '');
 });
 
 test('rendered publisher and tag buttons identify their distinct fields', () => {

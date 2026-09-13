@@ -85,6 +85,19 @@ async (page) => {
     check(await page.locator('.no-results').isVisible(), 'No matches state');
     await page.goto(`${base}?publisher=NoSuchPublisher987`); await ready();
     check((await page.locator('.no-results').textContent()).includes('Remove a filter'), 'Filtered no matches recovery');
+    await page.route('**/packages.json', route => route.fulfill({ json: { packages: [
+      { id: 'AQBot.AQBot', name: 'AQBot', description: 'Visual display; stdio transport' },
+      { id: 'Microsoft.VisualStudioCode', name: 'Visual Studio Code' },
+    ] } }));
+    await page.goto(`${base}?q=visual+stdio`); await ready();
+    check(JSON.stringify(await page.locator('.pkg-id').allTextContents()) ===
+      JSON.stringify(['Microsoft.VisualStudioCode', 'AQBot.AQBot']), `${width}: typo results precede metadata matches`);
+    check(await page.locator('#stats').textContent() === 'Showing 2 of 2 matches', 'Mixed result totals');
+    check(await page.locator('#search-note').textContent() ===
+      'Showing similar package names, IDs and monikers first.', 'Mixed result explanation');
+    await search('Visual Studio');
+    check(await page.locator('#search-note').textContent() === '', 'Literal search clears fuzzy explanation');
+    await page.unroute('**/packages.json');
     reports.push({ width, passed: true });
   }
   await page.route('**/packages.json', route => route.fulfill({ status: 503, body: 'Unavailable' }));

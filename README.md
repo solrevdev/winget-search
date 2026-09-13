@@ -7,8 +7,9 @@ static site for free; search runs in your browser.
 
 ## Features
 
-- Search IDs, names, monikers, descriptions, publishers and tags, with exact
-  matches first and typo fallback when needed.
+- Search IDs, names, monikers, descriptions, publishers and tags. If no package
+  matches all query words across its ID, name and moniker, try typo matching in
+  those fields and show those results before any metadata-only matches.
 - Filter by publisher and tags; share or reload query and filter URLs.
 - Copy an exact-ID `winget install` command and expand Details for package metadata.
 - Browse 25 results at a time, up to 200 matches; use `/` to search and `Esc` to clear.

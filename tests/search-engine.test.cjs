@@ -34,11 +34,102 @@ test('ordinary monikers, aliases and exact names retain their order', () => {
   }
 });
 
-test('an ordinary description match suppresses fuzzy fallback', () => {
-  const literal = { id: 'Test.Literal', description: 'Explains visaul studio code' };
-  const result = createEngine([...packages, literal]).search('visaul studio code');
-  assert.equal(result.fuzzy, false);
-  assert.deepEqual(result.results, [literal]);
+test('visual stdio finds Visual Studio before an incidental AQBot description match', () => {
+  const aqbot = {
+    id: 'AQBot.AQBot', name: 'AQBot',
+    description: 'Visual display of tool requests. Supports stdio and HTTP transport methods.',
+  };
+  const studio = { id: 'Microsoft.VisualStudio.2022.Community', name: 'Visual Studio Community 2022' };
+  const result = createEngine([aqbot, studio]).search('visual stdio');
+  assert.equal(result.fuzzy, true);
+  assert.deepEqual(result.results, [studio, aqbot]);
+});
+
+test('metadata matches cannot suppress fuzzy names, IDs or monikers', () => {
+  for (const field of ['name', 'id', 'moniker']) {
+    const identity = { id: 'Test.Identity', [field]: 'Chromium' };
+    for (const metadata of ['description', 'shortDescription', 'publisher', 'tags']) {
+      const literal = { id: 'Test.Literal', [metadata]: metadata === 'tags' ? ['chromiun'] : 'chromiun' };
+      const result = createEngine([literal, identity]).search('chromiun');
+      assert.equal(result.fuzzy, true, `${field}: ${metadata}`);
+      assert.deepEqual(result.results, [identity, literal], `${field}: ${metadata}`);
+    }
+  }
+});
+
+test('literal identity matches still suppress fuzzy alternatives', () => {
+  const alternative = { id: 'Test.Alternative', name: 'Chromium' };
+  for (const field of ['name', 'id', 'moniker']) {
+    const literal = { id: 'Test.Literal', [field]: 'chromiun' };
+    assert.deepEqual(createEngine([alternative, literal]).search('chromiun'), {
+      results: [literal], fuzzy: false,
+    });
+  }
+});
+
+test('literal identity matches allow reordered words and words split across identity fields', () => {
+  for (const literal of [
+    { id: 'Test.Literal', name: 'Studio Visual' },
+    { id: 'Test.Visual', name: 'Tools', moniker: 'studio' },
+  ]) {
+    const alternative = { id: 'Test.Alternative', name: 'Visual Stdio' };
+    assert.deepEqual(createEngine([alternative, literal]).search('visual studio'), {
+      results: [literal], fuzzy: false,
+    });
+  }
+});
+
+test('a literal word in an identity field cannot suppress correction of another word in metadata', () => {
+  const literal = { id: 'Test.Visual', description: 'stdio transport' };
+  const result = createEngine([literal, vscode]).search('visual stdio');
+  assert.equal(result.fuzzy, true);
+  assert.deepEqual(result.results, [vscode, literal]);
+});
+
+test('packages matching both searches appear once, ahead of metadata-only matches', () => {
+  const both = { ...vscode, description: 'visual stdio' };
+  const literal = { id: 'Test.Literal', description: 'visual stdio' };
+  const result = createEngine([literal, both]).search('visual stdio');
+  assert.equal(result.fuzzy, true);
+  assert.deepEqual(result.results, [both, literal]);
+});
+
+test('metadata results keep their order and survive when no fuzzy identity matches exist', () => {
+  const a = { id: 'A.Literal', description: 'chromiun' };
+  const b = { id: 'B.Literal', description: 'chromiun' };
+  const identity = { id: 'Test.Chromium', name: 'Chromium' };
+  assert.deepEqual(createEngine([b, identity, a]).search('chromiun'), {
+    results: [identity, a, b], fuzzy: true,
+  });
+  assert.deepEqual(createEngine([b, a]).search('chromiun'), {
+    results: [a, b], fuzzy: false,
+  });
+});
+
+test('filters constrain both fuzzy and metadata results before merging', () => {
+  const literal = { id: 'Test.Literal', description: 'visual stdio', publisher: vscode.publisher, tags: ['editor'] };
+  const excluded = { id: 'Test.Excluded', name: 'visual stdio', publisher: 'Other', tags: ['other'] };
+  for (const filters of [{ publisher: vscode.publisher }, { tags: ['editor'] }]) {
+    const result = createEngine([excluded, literal, vscode]).search('visual stdio', filters);
+    assert.equal(result.fuzzy, true);
+    assert.deepEqual(result.results, [vscode, literal]);
+  }
+  assert.deepEqual(createEngine([literal, { ...vscode, publisher: 'Other' }]).search('visual stdio', {
+    publisher: literal.publisher,
+  }), { results: [literal], fuzzy: false });
+  assert.deepEqual(createEngine([literal, { ...vscode, tags: ['other'] }]).search('visual stdio', {
+    tags: ['editor'],
+  }), { results: [literal], fuzzy: false });
+});
+
+test('metadata matches do not relax fuzzy word, punctuation or distance limits', () => {
+  const candidates = [vscode, { id: 'Test.Editor', name: 'C++ editor' }];
+  for (const query of ['visual stdio zebra', 'C+ editro', 'visual sxdo']) {
+    const literal = { id: 'Test.Literal', description: query };
+    assert.deepEqual(createEngine([...candidates, literal]).search(query), {
+      results: [literal], fuzzy: false,
+    });
+  }
 });
 
 test('fallback requires every word and indexes only identity fields', () => {
