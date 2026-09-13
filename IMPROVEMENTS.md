@@ -3,8 +3,31 @@
 This document captures known bugs, quick wins, and feature ideas for the winget-search project.
 It is intended as a starting point for new contributors or an LLM asked to find work to do.
 
+Start with [NEXT_STEPS.md](NEXT_STEPS.md) for the current plan and session handoff.
+
 Each item notes which file(s) are affected, the effort involved, and whether the change is
 backend-only (Python / CI), frontend-only (index.html), or both.
+
+## Search and catalog update (2026-09-13)
+
+Implemented on `codex/search-aliases-compact-results`:
+
+- Preserve manifest monikers, including `vscode`, and expand `vs code` to that alias.
+- Rank exact IDs, monikers, and names ahead of prefixes and descriptive matches.
+- Merge nonempty English fields over the declared default locale. Keep singleton
+  metadata and separate short and full descriptions.
+- Show compact two-line summaries with Copy always visible. Native Details reveals
+  full descriptions, publisher, tags, license, and homepage. This completes item #12.
+- Show the actual result total. Mention the 200-result cap only when it applies.
+- Add extractor and search regression tests, with a separate PR test workflow.
+
+The footer repository URL is already correct, so item #3 is also complete.
+The older status tables below record earlier reviews and are not the current status.
+
+Next work remains: typo tolerance (#14), true publisher/tag constraints, install-list
+export, and a smaller initial search catalog with static package detail pages (#15).
+Version comparison for non-PEP440 versions (#24), workflow reliability, and README
+housekeeping remain separate work. SEO changes are already proposed in PR #5.
 
 ## Branch Progress Update (2026-02-26)
 

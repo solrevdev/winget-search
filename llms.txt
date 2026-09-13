@@ -23,7 +23,9 @@ The JSON document contains:
 - `packages`: array of package records
 
 Package fields are `id`, `name`, `description`, `publisher`, `version`,
-`shortDescription`, `tags`, `homepage`, and `license`. Some values may be null.
+`shortDescription`, `moniker`, `tags`, `homepage`, and `license`. Some values may be null.
+`moniker` is the package's short alias, such as `vscode`. English locale fields
+override default-locale fields when present; missing fields retain their defaults.
 
 Use the exact package ID to construct an install command:
 
@@ -39,7 +41,7 @@ query='nssm'
 jq --arg q "$query" '
   .packages
   | map(select(
-      [.id, .name, .publisher, .description, ((.tags // []) | join(" "))]
+      [.id, .name, .moniker, .publisher, .shortDescription, .description, ((.tags // []) | join(" "))]
       | map(. // "")
       | join(" ")
       | ascii_downcase
@@ -57,7 +59,7 @@ $catalog = Invoke-RestMethod -Uri 'https://solrevdev.com/winget-search/packages.
 $query = 'nssm'
 $catalog.packages |
   Where-Object {
-    $text = (@($_.id, $_.name, $_.publisher, $_.description) + @($_.tags) |
+    $text = (@($_.id, $_.name, $_.moniker, $_.publisher, $_.shortDescription, $_.description) + @($_.tags) |
       Where-Object { $_ } |
       ForEach-Object { [string]$_ }) -join ' '
     $text.IndexOf($query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
