@@ -1,372 +1,115 @@
-## Summary
+# WinGet Package Search
 
-This project provides a fast, searchable web interface for Windows Package Manager (winget) packages. It uses GitHub Actions to:
-
-1. Automatically extract package data daily from the official winget repository
-2. Build a static site with the latest package information
-3. Deploy directly to GitHub Pages without any manual configuration
-
-The entire process is automated - just push your code and GitHub Actions handles everything else!
-
-# Winget Package Web Search
-
-A fast, modern web search interface for [Windows Package Manager (winget)](https://github.com/microsoft/winget-pkgs) packages with instant copy-to-clipboard installation commands.
+Search Windows Package Manager packages at
+[solrevdev.com/winget-search](https://solrevdev.com/winget-search/).
+GitHub Actions extracts the catalog daily at 02:00 UTC. GitHub Pages hosts the
+static site for free; search runs in your browser.
 
 ## Features
 
-- 🔍 **Ranked search** - Search by package ID, name, moniker, description, publisher, or tags; exact matches rank first
-- 📄 **Compact results** - Scan short summaries and expand Details for descriptions, publisher, tags, license, and homepage
-- 🧭 **Example searches** - Start from grouped dev tool and everyday app queries on the blank home screen
-- 📋 **One-click copy** - Copy `winget install` commands instantly
-- 🌐 **English metadata when available** - Merges English fields with the package's default locale
-- 🔄 **Auto-updated** - Daily updates via GitHub Actions
-- 🌓 **Dark mode** - Automatic theme based on system preferences
-- 📱 **Mobile-friendly** - Responsive design for all devices
-- ⚡ **Fast & lightweight** - No frameworks, pure vanilla JavaScript
-- ⌨️ **Keyboard shortcuts** - Press `/` to search, `Esc` to clear
+- Search IDs, names, monikers, descriptions, publishers and tags, with exact
+  matches first and typo fallback when needed.
+- Filter by publisher and tags; share or reload query and filter URLs.
+- Copy an exact-ID `winget install` command and expand Details for package metadata.
+- Browse 25 results at a time, up to 200 matches; use `/` to search and `Esc` to clear.
+- Use the full [catalog API](https://solrevdev.com/winget-search/packages.json),
+  [query guide](https://solrevdev.com/winget-search/agent-access.html) or
+  [agent instructions](https://solrevdev.com/winget-search/llms.txt).
 
-## Live Demo
+English fields supplement each package's default locale. The catalog keeps one
+version per package; version-ordering limits and future work live in
+[IMPROVEMENTS.md](IMPROVEMENTS.md).
 
-Visit the live site: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
+## Setup and deployment
 
-## How It Works
+1. Fork or clone the repository. Keep source work on `master`; `gh-pages` holds
+   generated files. The build also accepts pushes to `main` for forks using it.
+2. Set `public_base_url` in [site_config.json](site_config.json) for your deployment.
+   [build_site.py](build_site.py) uses it for metadata, guides, the sitemap and
+   the 404 redirect. See [SEO.md](SEO.md) for the URL contract. Update the repository
+   link in the footer when forking. Configure any custom domain separately.
+3. Enable GitHub Actions and permit the actions used by the workflows. The build
+   requests write access for the built-in `GITHUB_TOKEN`; no personal token is
+   needed. Repository or organization policy must allow those permissions.
+4. Push to the source branch or run **Build and Deploy** from the Actions tab.
+   It refreshes `microsoft/winget-pkgs`, extracts `packages.json`, runs the shared
+   site builder and pushes the result to `gh-pages`.
+5. Enable **Settings > Pages > Deploy from a branch**, with `gh-pages` and `/ (root)`.
+   The build does not enable Pages or change this setting.
+6. Check both **Build and Deploy** and the separate **Pages** publication, then
+   open the live site. A successful push to `gh-pages` alone does not prove that
+   Pages published the site.
 
-1. **Data Extraction**: GitHub Actions runs daily to:
-   - Clone the official [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) repository
-   - Parse all YAML manifest files
-   - Merge English package metadata with default-locale fields
-   - Generate a `packages.json` file with the latest versions only
+The upstream Git checkout uses a versioned UTC daily cache key with prefix restore.
+Every build refreshes it, including exact cache hits, using upstream's current
+default branch. Same-day runs reuse the saved snapshot; the next day can restore
+it by prefix and save a fresh snapshot.
 
-2. **Search Interface**: A static HTML page that:
-   - Loads the generated `packages.json`
-   - Shows a blank home state with grouped example searches
-   - Provides instant client-side search
-   - Generates copy-ready `winget install` commands
+To refresh the catalog, run **Build and Deploy**. For a publication-only retry,
+run **Trigger Pages Deploy**. The local alternative is `bash force_pages_update.sh`
+from a clean checkout on a branch. It fetches `gh-pages` into a temporary worktree,
+allows only fast-forward updates and pushes changes to `index.html` and `.nojekyll`.
+Your starting checkout stays in place, including on failure. Detached HEAD and
+tracked or untracked changes cause it to stop. On failure, it prints the retained
+worktree path for inspection; remove that exact worktree with `git worktree remove`
+once its contents are no longer needed. It never force-pushes over a newer build.
 
-3. **Machine-readable access**:
-   - Publishes the complete catalog at `packages.json`
-   - Advertises the catalog through HTML metadata and `llms.txt`
-   - Provides tested curl/jq and PowerShell examples on `agent-access.html`
-
-4. **Deployment**: The GitHub Actions workflow:
-   - Builds the site and generates `packages.json`
-   - Deploys directly to GitHub Pages using the `peaceiris/actions-gh-pages` action
-   - GitHub Pages automatically serves the site from the deployment
-   - No manual branch management needed - it's all automated!
-
-## Setup Instructions
-
-### Prerequisites
-
-- A GitHub account
-- A repository for this project
-
-### Installation
-
-1. **Fork or clone this repository**
-
-2. **Update the repository references**:
-   - In `index.html`, replace `YOUR_USERNAME/YOUR_REPO_NAME` with your actual GitHub username and repository name
-   - This appears in the footer link
-
-3. **Enable GitHub Actions**:
-   - Go to your repository's **Settings** > **Actions** > **General**
-   - Under "Actions permissions", select "Allow all actions and reusable workflows"
-   - Under "Workflow permissions", select "Read and write permissions"
-   - **Note**: No personal access token needed! The workflow uses GitHub's built-in `GITHUB_TOKEN`
-
-4. **Push to main branch**:
-   ```bash
-   git add .
-   git commit -m "Initial setup"
-   git push origin main
-   ```
-
-5. **Wait for the first build**:
-   - Go to the **Actions** tab in your repository
-   - You should see the "Build and Deploy" workflow running
-   - This first run will take a few minutes as it processes ~30,000+ packages
-
-6. **Enable GitHub Pages for this repository**:
-   - Go to **Settings** > **Pages**
-   - Under "Build and deployment" > "Source", choose **Deploy from a branch**
-   - Set the branch to `gh-pages` and the folder to `/ (root)`
-   - Save the change and wait for the first Pages publish to complete
-   - **Important**: the workflow only pushes built files to `gh-pages`; if GitHub Pages is disabled for the repo, the Actions run can succeed while the live site still returns `404`
-
-7. **Access your site**:
-   - Your site will be available at `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
-   - It may take a few minutes for GitHub Pages to activate after the first deployment
-
-## Deployment Notes
-
-- This project deploys by pushing static assets to the `gh-pages` branch from `.github/workflows/github_workflows_build.yml`.
-- Merges should continue to target `main`/`master`; `gh-pages` is a generated deployment branch, not the branch for feature work.
-- A successful `Build and Deploy` run is not enough on its own. The repository must also have GitHub Pages enabled and pointed at `gh-pages`.
-- If the site suddenly returns `404` while `gh-pages` contains the expected files, check **Settings** > **Pages** before debugging the frontend.
-
-## Customization
-
-### Modify Search Behavior
-
-Edit the `showResults()` function in `index.html` to customize search logic:
-
-```javascript
-// Current implementation searches in:
-// - Package ID
-// - Package name  
-// - Description
-// - Publisher
-// - Tags
-```
-
-### Change Update Schedule
-
-Edit `.github/workflows/github_workflows_build.yml` to modify the update schedule:
-
-```yaml
-schedule:
-    # Run at different time (e.g., every 6 hours)
-    - cron: '0 */6 * * *'
-```
-
-### Styling
-
-The site uses CSS custom properties for theming. Modify the `:root` variables in `index.html` to customize colors.
+If the site is missing or stale, check Pages settings, both workflow results and
+the deployed files before testing with a hard browser refresh.
 
 ## Development
 
-### Local Testing
+Use Python 3.11 or later, Node.js 22 or later and an isolated Python environment:
 
-Run the regression checks with Python dependencies installed and Node.js 22 or later:
-
-```bash
-uv run --no-project --with pyyaml --with packaging python -m unittest discover -s tests -p 'test_*.py'
-node --test tests/search.test.cjs
+```sh
+uv venv .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
+node --test tests/*.test.cjs
+git diff --check
 ```
 
-The tests cover locale merging, singleton manifests, monikers, exact-match ranking,
-punctuation, and result counts. Pull requests run both suites in GitHub Actions.
+Without `uv`, use `python3 -m venv .venv`, then
+`.venv/bin/python -m pip install -r requirements.txt`.
 
-You can test locally using either traditional pip or modern uv (recommended).
+Keep downloaded catalogs and previews outside the source checkout. For example:
 
-#### Option 1: Using uv (Recommended)
-
-[uv](https://github.com/astral-sh/uv) is a fast, modern Python package manager. If you have it installed:
-
-```bash
-# Clone winget-pkgs repository first (this will take a few minutes - it's a large repo)
-git clone --depth 1 https://github.com/microsoft/winget-pkgs.git
-
-# Run the extraction script with uv (creates isolated environment automatically)
-# This uses Python 3.11 as specified in .python-version
-uv run extract_packages.py winget-pkgs/manifests/ packages.json
-
-# The extraction will take a few minutes and show progress:
-# Total manifest YAML files found: XXXXX
-# Total valid packages found: XXXXX
-# Unique packages extracted: XXXXX
-
-# Serve the site locally
-uv run python -m http.server 8000
-# or just use Python directly if you have it
-python3 -m http.server 8000
-
-# Visit http://localhost:8000 in your browser
+```sh
+preview_root=$(mktemp -d)
+git clone --depth 1 https://github.com/microsoft/winget-pkgs.git "$preview_root/winget-pkgs"
+.venv/bin/python extract_packages.py "$preview_root/winget-pkgs/manifests" "$preview_root/packages.json"
+.venv/bin/python build_site.py --packages "$preview_root/packages.json" --output-dir "$preview_root/site"
+.venv/bin/python -m http.server 8000 --bind 127.0.0.1 --directory "$preview_root/site"
 ```
 
-For a one-time run without creating a virtual environment:
-```bash
-# Run extraction with inline dependencies
-uvx --with pyyaml --with packaging --python 3.11 \
-  python extract_packages.py winget-pkgs/manifests/ packages.json
-```
+Open `http://127.0.0.1:8000`. Stop the server when finished and keep track of the
+printed temporary path. The source `packages.json` is a tracked empty placeholder;
+the build publishes the generated catalog without changing its public format.
 
-#### Option 2: Using pip with virtual environment
+The Node tests cover search logic, ranking and UI state. Python tests cover
+extraction, site builds and maintenance. Pull requests run both suites.
+`tests/browser-search.js` and `tests/browser-seo.js` check desktop and mobile flows
+through `playwright-cli run-code --filename` against a built preview or the live site.
 
-```bash
-# Create a virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+## Source guide
 
-# Install dependencies
-pip install -r requirements.txt
+| File | Purpose |
+| --- | --- |
+| `index.html`, `search.js`, `vendor/` | Search UI, ranking and bundled search library |
+| `extract_packages.py` | Manifest extraction and locale merging |
+| `build_site.py`, `site_config.json` | Shared site build and public URL |
+| `agent-access.html`, `llms.txt`, `sitemap.xml` | Source templates for generated guides and sitemap |
+| `.github/workflows/` | Tests, daily build and publication retry |
+| `NEXT_STEPS.md` | Current work, release checks and resources |
 
-# Clone winget-pkgs repository
-git clone https://github.com/microsoft/winget-pkgs.git
+Change the daily schedule in `.github/workflows/github_workflows_build.yml`.
+Change styles in `index.html`; retain search and URL contracts when editing the UI.
+See [IMPROVEMENTS.md](IMPROVEMENTS.md) for the remaining backlog.
 
-# Run extraction
-python extract_packages.py winget-pkgs/manifests/ packages.json
+## License and credits
 
-# Serve locally
-python -m http.server 8000
-```
-
-#### Option 3: Using pip globally (not recommended)
-
-```bash
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Clone winget-pkgs and run extraction
-git clone https://github.com/microsoft/winget-pkgs.git
-python extract_packages.py winget-pkgs/manifests/ packages.json
-
-# Serve locally
-python -m http.server 8000
-```
-
-After starting the server, open `http://localhost:8000` in your browser.
-
-### Project Structure
-
-```
-├── .github/
-│   └── workflows/
-│       ├── github_workflows_build.yml    # Main build workflow (automated deployment)
-│       └── github_workflows_pages_deploy.yml  # Manual trigger for re-deployment
-├── extract_packages.py    # Package extraction script
-├── index.html            # Search interface
-├── agent-access.html     # Human-readable catalog query guide
-├── llms.txt              # Machine-readable agent instructions
-├── packages.json         # Generated package data (not in source)
-├── requirements.txt      # Python dependencies (pip)
-├── pyproject.toml        # Modern Python project config (uv)
-├── .python-version       # Python version for uv
-├── LICENSE              # MIT License
-└── README.md            # This file
-```
-
-**Note about workflows**: The main workflow (`github_workflows_build.yml`) handles everything automatically. The second workflow (`github_workflows_pages_deploy.yml`) is just a utility for forcing a re-deployment if ever needed.
-
-## Technical Details
-
-### Package Extraction
-
-The extraction script (`extract_packages.py`):
-- Parses winget manifest YAML files
-- Merges nonempty English locale fields over the declared default locale
-- Preserves singleton metadata, monikers, and separate short and full descriptions
-- Deduplicates packages, keeping only the latest version
-- Uses proper semantic versioning comparison
-- Outputs a structured JSON with metadata
-
-### Performance
-
-- Initial load: ~5-10MB JSON file containing ~30,000+ packages
-- The home page starts blank and suggests grouped example searches instead of showing arbitrary starter results
-- Search is performed client-side for instant results
-- Ranked search results are capped at 200 items for performance
-- Debounced search input (300ms) for smooth typing
-
-Exact package IDs rank above exact monikers, exact names, prefixes, and other matches.
-The common query `vs code` expands to the `vscode` moniker. Punctuation stays intact
-for names such as `C++`, `C#`, `.NET`, and `Node.js`. Typo tolerance is future work.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-### Ideas for Improvement
-
-- Add package categories/sections
-- Implement fuzzy search
-- Add sorting options (by name, downloads, date)
-- Show package icons/logos
-- Add "copy as PowerShell" option
-- Implement package details modal
-- Add search history
-- Export search results
-
-## Summary
-
-This project provides a fast, searchable web interface for Windows Package Manager (winget) packages. It uses GitHub Actions to:
-
-1. Automatically extract package data daily from the official winget repository
-2. Build a static site with the latest package information  
-3. Deploy directly to GitHub Pages without any manual configuration
-
-The entire process is automated - just push your code and GitHub Actions handles everything else!
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Credits
-
-- Package data from [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs)
-- Automated deployment using [GitHub Actions](https://github.com/features/actions) and [GitHub Pages](https://pages.github.com/)
-- [peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages) for seamless deployment
-
-## Troubleshooting
-
-### GitHub Pages not updating (shows old content)
-
-This is a common issue, especially with custom domains. Try these solutions:
-
-1. **Check GitHub Pages status**:
-   - Go to Settings > Pages
-   - Look for "Your site is live at..." message
-   - Check the "Last deployed" timestamp
-   - If it's old, the deployment isn't being detected
-
-2. **Force a rebuild**:
-   - Run the "Trigger Pages Deploy" workflow manually from the Actions tab
-   - Or make a small change to any file in the gh-pages branch
-
-3. **Clear CDN cache** (for custom domains):
-   - Custom domains use GitHub's CDN which can cache aggressively
-   - Wait 10-15 minutes for cache to expire
-   - Try accessing with `?v=timestamp` to bypass cache: `https://yourdomain.com/winget-search/?v=123`
-
-4. **Check deployment source**:
-   - In Settings > Pages, try switching between "Deploy from branch" and "GitHub Actions"
-   - If using "Deploy from branch", ensure it's set to `gh-pages` branch and `/ (root)`
-
-5. **Verify files in gh-pages branch**:
-   - Check that the new files are actually in the gh-pages branch
-   - Look for the `:root` CSS variables in index.html
-   - Ensure there's a `.nojekyll` file (prevents Jekyll processing)
-
-6. **Browser cache**:
-   - Hard refresh: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
-   - Open in incognito/private mode
-   - Check browser DevTools > Network tab with "Disable cache" checked
-
-### GitHub Pages not showing or wrong deployment source
-
-- The workflow automatically configures GitHub Pages to use "GitHub Actions" as the source
-- If Pages shows "Deploy from a branch" instead, the site should still work
-- You can manually switch to "GitHub Actions" if needed, but it's not required
-- The `peaceiris/actions-gh-pages@v4` action handles the deployment regardless of the Pages setting
-
-### Python version mismatch
-
-- The project uses Python 3.11 (as specified in `.python-version` and GitHub Actions)
-- If you have a different Python version locally, `uv` will automatically download and use Python 3.11
-- If you prefer to use your system Python (3.12+), it should work fine, but test thoroughly
-
-### Build fails with "packages.json not created"
-
-- Check the Python error output in the Actions log
-- Ensure the winget-pkgs repository structure hasn't changed
-
-### Site shows "Failed to load package data"
-
-- Check if the GitHub Actions workflow completed successfully
-- Verify that GitHub Pages is enabled (Settings > Pages)
-- Check that the site URL is correct: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
-- Look at the browser console for any errors
-- The workflow creates everything automatically, so no manual branch management is needed
-
-### Search returns no results
-
-- Open browser console and check for JavaScript errors
-- Verify `packages.json` is loading correctly
-- Check if the JSON structure matches what the JavaScript expects
-
-### Updates not reflecting
-
-- The workflow runs daily at 2 AM UTC
-- You can manually trigger it from the Actions tab using "Run workflow"
-- Check the workflow run logs for any errors
+Project code uses the [MIT license](license.txt). Package data comes from
+[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs); individual
+software packages retain their own licenses. GitHub Actions, GitHub Pages and
+[peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages)
+handle the build and deployment.

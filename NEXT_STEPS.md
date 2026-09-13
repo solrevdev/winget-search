@@ -12,8 +12,10 @@ unresolved work forward. Git history and PRs retain detailed past investigations
 - `site_config.json` holds the public URL; reuse `build_site.py` for metadata,
   guides, sitemap and redirect. See `SEO.md` for that contract and source guidance.
 - Live site: https://solrevdev.com/winget-search/
-- PR #5 merged at `1d87f32`, deployed and verified live. Its feature branch was
-  removed locally/remotely; refs pruned. Master is clean and synced at handoff.
+- PR #5 merged at `1d87f32`, deployed and verified live; its branch is cleaned up.
+- Issue #4 maintenance is on `codex/issue-4-maintenance`, based on synced `master`
+  at `a22dc4d`. Implementation is tested in
+  [PR #8](https://github.com/solrevdev/winget-search/pull/8); review and release are next.
 
 ## Completed
 
@@ -33,23 +35,35 @@ headings and image requirements are implemented; Google ignores its proposed
 keywords meta tag. Search Console account work remains separate below.
 PR #5 also addresses issue #4's redirect; issue #4 is only partly complete.
 
-## Next bounded batch: remaining issue #4 maintenance
+## Issue #4 maintenance: PR #8 awaits review
 
-Propose scope and wait for agreement before implementing from synced `master`.
+The agreed batch is implemented in
+[PR #8](https://github.com/solrevdev/winget-search/pull/8). Check its latest CI result
+before merging; merge approval is still required:
 
-1. Fix README duplication, license link, placeholder URL and Pages setup claims.
-2. Use a versioned UTC daily cache key with prefix restore. Always refresh the
-   upstream checkout, including exact cache hits; remove the separate step that
-   assumes `origin/master`. Prefix restoration already works; do not claim it is
-   absent. Verify actual reuse and default-branch behavior.
-3. Make `force_pages_update.sh` reject dirty worktrees, use fast-forward updates,
-   stage only intended files and restore its starting branch on success/failure.
-   Handle detached HEAD explicitly. Test with temporary local Git remotes.
-4. Reuse PR #5's URL/build rules. Footer and redirect are done; do not rebuild them.
+- README duplication, license link, live URL and Pages claims corrected; stale
+  search/development guidance trimmed.
+- Versioned UTC daily cache key with prefix restore. Unconditional upstream
+  checkout refreshes exact hits too and resolves the current default branch.
+- Pages helper rejects dirty/detached starts, uses a temporary worktree and
+  fast-forward updates, and commits only intended files. The starting branch and
+  HEAD stay unchanged. Failed work is retained with its path for inspection.
+- Existing public URL/build rules, search behavior and catalog format preserved.
 
-Keep this batch separate from new search features. Close
-[issue #4](https://github.com/solrevdev/winget-search/issues/4) only after its
-remaining criteria and release checks pass.
+Local validation: all **38 Node and 34 Python tests** pass (the original 19 Python
+checks plus 15 maintenance checks). Checkout smoke tests exercise the unmodified
+v4 action against local Git remotes and a stub API: miss, exact hit, prefix restore,
+renamed default branch, Git directory reuse and credential removal all pass.
+The smoke test also runs in PR CI. ShellCheck, Bash syntax and diff checks pass.
+
+Both browser suites pass at 1280px and 375px; Chrome query URLs and the footer pass.
+All 13 built files match PR #5's expected build byte for byte with its saved
+14,836-record catalog. Inline JavaScript, JSON-LD, sitemap and README links pass.
+
+Wait for merge approval. After merge, check both deployment stages and the live
+site before closing [issue #4](https://github.com/solrevdev/winget-search/issues/4)
+or cleaning up the branch. Confirm the first v2 cache save and a later exact hit
+in Actions logs; local smoke tests do not prove hosted cache transfer.
 
 ## Later work
 
@@ -71,7 +85,8 @@ requirements and is not a ranking guarantee.
 
 ## Checks and release procedure
 
-Baseline: **38 Node tests and 19 Python tests** (nine extraction, ten build).
+Baseline: **38 Node and 34 Python tests** (nine extraction, ten build, 15 maintenance),
+plus the checkout cache smoke test in CI.
 
 ```sh
 node --test tests/*.test.cjs
@@ -92,18 +107,16 @@ may use `[skip ci]` after confirming they change no deployed inputs.
 
 ## Resource log
 
-Record resources immediately: owner, purpose, PID/tool session, browser name,
-port/URL, paths and status. Stop only verified task-owned resources. At handoff,
-list anything active; offer cleanup unless already authorized. Keep only the
-current resource summary here; old process details remain in Git history.
+Record owner, purpose, PID/session, URL/port, paths and status as resources start.
+Stop only verified task-owned resources; retain only current status here.
 
-- PR #5 release: Build `34775515056`, Tests `34775515024`, Pages `34775751604`
-  passed. Both live browser suites passed at 1280px and 375px.
-- Playwright `winget-seo-release`: parent-owned live checks at
-  `https://solrevdev.com/winget-search/`; PID 67800, open session 56658, test
-  session 75443. Closed; PID/session checked. No local server was started.
-- No task-owned browsers or servers remain. Ports 8765/8766 checked; prior preview
-  resources remain stopped. Unrelated resources were left intact.
-- Evidence: `/private/tmp/winget-seo-pr5-20260913/live` and `.playwright-cli/`;
-  inert test results, screenshots and downloaded files. Prior tools/previews in
-  the parent directory are inert too. Old resource details remain in Git history.
+- Parent-owned preview: Python PID `70712`, session `29537`, port `8765`,
+  `http://127.0.0.1:8765/winget-search/`. Stopped after browser checks.
+- Parent-owned Playwright `winget-issue4`: daemon PID `71569`, open session `96019`,
+  search `39278`, SEO `63409`, final checks/close `54198`. Closed after checks.
+- Checkout smoke PID `70739`, API port `62464`, session `77790`: passed and stopped;
+  temporary Git fixtures removed. Unit-test remotes/worktrees removed on exit.
+- Evidence: `/private/tmp/winget-issue4-20260913` (preview, action source and checks)
+  and `.playwright-cli/` (screenshots/logs). Inert files only; no task-owned servers
+  or browsers remain. Prior release evidence remains at
+  `/private/tmp/winget-seo-pr5-20260913/live`. Unrelated resources left intact.

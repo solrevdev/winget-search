@@ -1,27 +1,53 @@
 #!/bin/bash
-# Force GitHub Pages to update by creating a .nojekyll file and pushing a change
+set -euo pipefail
 
-# This script can be run locally to force GitHub Pages to rebuild
-# Make sure you're in your repository directory
+repo=$(git rev-parse --show-toplevel)
+cd "$repo"
+if ! starting_branch=$(git symbolic-ref --quiet --short HEAD); then
+    echo "Check out a branch before running this helper; detached HEAD is not supported." >&2
+    exit 1
+fi
+if [[ -n $(git status --porcelain --untracked-files=all) ]]; then
+    echo "Commit or stash tracked and untracked changes before running this helper." >&2
+    exit 1
+fi
 
-# Switch to gh-pages branch
-git checkout gh-pages
+# An isolated checkout keeps failures and generated files off the starting branch.
+git fetch --no-tags origin refs/heads/gh-pages
+pages_commit=$(git rev-parse FETCH_HEAD)
+task_dir=$(mktemp -d "${TMPDIR:-/tmp}/winget-pages-update.XXXXXX")
+worktree="$task_dir/site"
+echo "Pages helper worktree: $worktree (starting branch: $starting_branch)"
 
-# Pull latest changes
-git pull origin gh-pages
+finish() {
+    status=$?
+    trap - EXIT
+    if [[ $status -eq 0 ]]; then
+        if git -C "$repo" worktree remove "$worktree" && rmdir "$task_dir"; then
+            echo "Pages update pushed. Starting branch remains $starting_branch."
+            echo "Verify Pages publication and the live site."
+        else
+            echo "Update pushed, but cleanup failed. Inspect $worktree." >&2
+            status=1
+        fi
+    else
+        echo "Pages update failed. Starting branch remains $starting_branch." >&2
+        echo "Inspect retained work at $worktree before removing it with git worktree remove." >&2
+    fi
+    exit "$status"
+}
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-# Create or touch .nojekyll file (tells GitHub Pages not to process with Jekyll)
+git worktree add --detach "$worktree" "$pages_commit"
+cd "$worktree"
+# Catch a concurrent publication without merging two generated site histories.
+git pull --ff-only --no-rebase origin gh-pages
+test -f index.html
 touch .nojekyll
-
-# Add a timestamp to force a change
-echo "<!-- Last updated: $(date) -->" >> index.html
-
-# Commit and push
-git add .
-git commit -m "Force GitHub Pages rebuild - $(date)"
-git push origin gh-pages
-
-# Switch back to master
-git checkout master
-
-echo "GitHub Pages should rebuild within a few minutes"
+printf '\n<!-- Pages refresh: %s -->\n' "$(date -u +%FT%TZ)" >> index.html
+git add -- .nojekyll index.html
+git commit --only -m "chore: trigger Pages publication" -- .nojekyll index.html
+git push origin HEAD:refs/heads/gh-pages
+cd "$repo"
