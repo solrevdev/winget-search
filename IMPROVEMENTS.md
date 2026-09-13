@@ -6,12 +6,6 @@ Check the code and GitHub before choosing work. These are proposals, not approve
 implementation scope. The tracked empty catalog placeholder is documented in the
 README; that policy is settled.
 
-## In review
-
-**Version ordering:** the approved fix and doc consolidation are on
-`codex/version-ordering`. Local checks passed; merge needs approval. See
-[NEXT_PROMPT.md](NEXT_PROMPT.md). Remove this entry after release verification.
-
 ## Maintenance
 
 | Work | Remaining decision |
