@@ -10,7 +10,7 @@ backend-only (Python / CI), frontend-only (index.html), or both.
 
 ## Search and catalog update (2026-09-13)
 
-Implemented on `codex/search-aliases-compact-results`:
+Shipped in [PR #6](https://github.com/solrevdev/winget-search/pull/6):
 
 - Preserve manifest monikers, including `vscode`, and expand `vs code` to that alias.
 - Rank exact IDs, monikers, and names ahead of prefixes and descriptive matches.
@@ -24,8 +24,13 @@ Implemented on `codex/search-aliases-compact-results`:
 The footer repository URL is already correct, so item #3 is also complete.
 The older status tables below record earlier reviews and are not the current status.
 
-Next work remains: typo tolerance (#14), true publisher/tag constraints, install-list
-export, and a smaller initial search catalog with static package detail pages (#15).
+[PR #7](https://github.com/solrevdev/winget-search/pull/7) adds typo tolerance (#14)
+and true publisher/tag constraints with chips, URL state, and browser history. It
+is merged, deployed, and verified live; release evidence is in `NEXT_STEPS.md`.
+
+Next work is the SEO batch in PR #5 with issue #1, followed by the separate issue #4
+maintenance batch. Install-list export and a smaller initial catalog with static
+package detail pages (#15) remain later feature work.
 Version comparison for non-PEP440 versions (#24), workflow reliability, and README
 housekeeping remain separate work. SEO changes are already proposed in PR #5.
 

@@ -2,6 +2,7 @@
 
 Updated: 2026-09-13. This is the current plan. The older tables in
 `IMPROVEMENTS.md` retain historical notes and may describe completed work as open.
+Use [NEXT_PROMPT.md](NEXT_PROMPT.md) to start the next review/implementation round.
 
 ## Project and constraints
 
@@ -35,7 +36,26 @@ matching `metadata.total`, with extraction timestamp `2026-09-13T17:49:13.386657
 Earlier PR #3 already added regex-safe highlighting, ranking, paging, query URLs,
 homepage/license links and publisher/tag actions. Do not rebuild these from scratch.
 
-## Search batch: implemented, awaiting PR review
+## Search batch: PR #7 merged and deployed
+
+Released on 2026-09-13:
+
+- [PR #7](https://github.com/solrevdev/winget-search/pull/7) is merged and closed.
+  Merge commit: `ecd44500574a646ee5a030a8e524842049d54095`.
+- [Build and Deploy](https://github.com/solrevdev/winget-search/actions/runs/34773992863)
+  and [Pages publication](https://github.com/solrevdev/winget-search/actions/runs/34774194266)
+  both passed. The merge's test workflow passed too.
+- Public `search.js` and MiniSearch bytes match the merged source. The catalog has
+  14,836 records, matching `metadata.total`, extracted at
+  `2026-09-13T18:17:57.426295`.
+- The saved browser suite passed on the public site at 1280px and 375px, including
+  typo/ordinary ranking, filters, URL history, clipboard, Details, paging, and
+  empty/error recovery, with no uncaught browser exceptions.
+- Removed `codex/search-typos-filters` locally and remotely after comparing its tree
+  with the deployed merge. Pruned remote references. Keep `master`, `gh-pages`, and
+  the unresolved PR #5 branch. Master is clean and synced at handoff.
+- All task-owned local servers and Playwright sessions are stopped; see the resource
+  log below. The next bounded batch is PR #5 and issue #1, after scope agreement.
 
 MiniSearch 7.2.0 now provides a locally served, lazy typo index for IDs, names, and
 monikers. The existing scorer still handles ordinary searches. Fallback runs only
@@ -59,7 +79,8 @@ Verified acceptance examples:
 
 ## Approved scope and verification
 
-The user approved a search-only batch on `codex/search-typos-filters`. It includes
+The user reviewed and approved [PR #7](https://github.com/solrevdev/winget-search/pull/7),
+merged on 2026-09-13 as `ecd44500574a646ee5a030a8e524842049d54095`. It includes
 the search core, UI, local library and license, tests, asset-copy workflow changes,
 and this roadmap. Hosting remains free on GitHub Pages, extraction stays in Actions,
 and search stays in the browser. The catalog endpoint and existing `?q=` links remain.
@@ -92,8 +113,9 @@ their scope; this search batch does not implement them or close their issues.
 
 ### PR #5 and issue #1: one SEO change
 
-[PR #5](https://github.com/solrevdev/winget-search/pull/5) remains open and mergeable
-at `949eec26e58f8f392d505a4cabba752264d3da94`, with no reported checks. Preserve
+[PR #5](https://github.com/solrevdev/winget-search/pull/5) remains open at
+`949eec26e58f8f392d505a4cabba752264d3da94`. After PR #7 merged, GitHub reports
+merge conflicts with `master`; resolve them as part of the next SEO batch. Preserve
 `feat/seo-meta-sitemap-dataset` and complete the useful issue #1 work there.
 
 - Canonical and social metadata are absent from the live homepage. PR #5 supplies
@@ -109,7 +131,8 @@ at `949eec26e58f8f392d505a4cabba752264d3da94`, with no reported checks. Preserve
   calls for accurate last-modified dates and ignores priority/change frequency.
 - The homepage already has a title, description, h1, and footer. Add useful
   header/main landmarks, result headings, and appropriate treatment of decorative
-  SVGs. This search batch adds an explicit search label. Keep the PNG's social alt descriptions. Do not add
+  SVGs. This search batch adds an explicit search label. Keep the PNG's social alt
+  descriptions. Do not add
   the issue's keyword meta tag: [Google ignores it](https://developers.google.com/search/docs/crawling-indexing/special-tags).
 - Share a single public-base-URL rule with issue #4's generated redirect. Validate
   project paths and custom-domain paths together with canonical and sitemap URLs.
@@ -138,7 +161,33 @@ at `949eec26e58f8f392d505a4cabba752264d3da94`, with no reported checks. Preserve
   Handle a detached starting state explicitly before changing branches.
 
 Baseline before this batch: 14 Node search tests and nine Python extraction tests
-passed. The current search branch awaits review and has not been merged or deployed.
+passed. PR #7 is now merged, deployed, and verified live as recorded above.
+
+## Resource tracking and handoff
+
+Record resources here as soon as they start. Include the owning task/batch, purpose,
+process PID or tool session ID, port and URL, browser session name, temporary paths,
+and status. Check the running process or session before stopping it; stale PIDs may
+belong to another task. Keep unrelated services and browser sessions intact.
+
+At every PR handoff, list resources that are still active and offer to tear them
+down in one short question. Do not leave a server or browser unmentioned. If cleanup
+is already authorized, do it and report the verified result. Update this log after
+cleanup. Temporary files can remain as inert test evidence; distinguish them from
+running resources.
+
+| Resource | Owner and location | Status |
+| --- | --- | --- |
+| Preview server, PID 62533 | PR #7; port 8765; `http://127.0.0.1:8765/winget-search/`; `/private/tmp/winget-preview`; exec session 32615 | Stopped 2026-09-13; port checked |
+| Staged preview server, PID 63164 | PR #7; port 8766; `http://127.0.0.1:8766/winget-search/`; `/private/tmp/winget-review-preview`; exec session 57935 | Stopped 2026-09-13; port checked |
+| Playwright `winget-search` | PR #7 desktop/mobile-width checks | Closed 2026-09-13 |
+| Playwright `winget-mobile` | PR #7 touch checks | Closed 2026-09-13 |
+| Playwright `winget-release-check`, PID 63851 | PR #7 public deployment verification; `https://solrevdev.com/winget-search/`; no local server | Passed and closed 2026-09-13; PID checked |
+
+Preview directories and `.playwright-cli/` screenshots/logs are inert evidence.
+No task-owned servers or Playwright sessions remain active. Verified with
+`playwright-cli list`, process checks, and listener checks on ports 8765 and 8766.
+Unrelated services were left running.
 
 ## Following batches
 
