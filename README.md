@@ -17,8 +17,11 @@ static site for free; search runs in your browser.
   [agent instructions](https://solrevdev.com/winget-search/llms.txt).
 
 English fields supplement each package's default locale. The catalog keeps one
-version per package; version-ordering limits and future work live in
-[IMPROVEMENTS.md](IMPROVEMENTS.md).
+version per package. Selection keeps Python packaging's version order and also
+recognizes ISO dates and numeric `A@B` versions. Other formats rank below recognized
+versions, with numeric-aware text ordering and fixed tie-breaks. This fallback is
+predictable but cannot infer every publisher's release order. The catalog retains
+the original version values.
 
 ## Setup and deployment
 
@@ -91,6 +94,33 @@ extraction, site builds and maintenance. Pull requests run both suites.
 `tests/browser-search.js` and `tests/browser-seo.js` check desktop and mobile flows
 through `playwright-cli run-code --filename` against a built preview or the live site.
 
+## Work across sessions
+
+[IMPROVEMENTS.md](IMPROVEMENTS.md) is the only backlog.
+[NEXT_PROMPT.md](NEXT_PROMPT.md) is the paste-ready handoff for the current or next
+task: scope, approval state, next action and active resources. Replace it as work
+moves on. Ask before adding backlog items; report any follow-up found during PR
+review before adding it. When the list is empty, agree a fresh scan.
+
+Verify local Git and GitHub before acting. Start new work from synced `master` on
+a fresh branch; resume an existing task on its verified branch. Preserve the
+catalog format, search, query/filter URLs, ranking, copy and Details. Keep the
+existing regression tests and checkout cache smoke test. Run the commands above;
+CI also runs `tests/checkout-cache-smoke.py` against the checkout action bundle.
+For affected site flows, build with `build_site.py` and run both browser suites at
+desktop and mobile widths. Read `playwright-cli --help` before use.
+
+Leave a tested PR and wait for merge approval. After merge, verify Build and
+Deploy, separate Pages publication and the live site before closing issues or
+deleting completed branches. Keep dated release evidence in the PR or issue;
+past checks do not establish current status. Docs-only commits may use `[skip ci]`
+after checking that no deployed inputs changed.
+
+Track task-owned resources in the handoff as they start: purpose, paths,
+PID/session, URL/port and status. After release checks, stop and remove only those
+resources and clear completed entries from the handoff. Keep unrelated backlog,
+account work, processes and files separate.
+
 ## Source guide
 
 | File | Purpose |
@@ -100,7 +130,8 @@ through `playwright-cli run-code --filename` against a built preview or the live
 | `build_site.py`, `site_config.json` | Shared site build and public URL |
 | `agent-access.html`, `llms.txt`, `sitemap.xml` | Source templates for generated guides and sitemap |
 | `.github/workflows/` | Tests, daily build and publication retry |
-| `NEXT_STEPS.md` | Current work, release checks and resources |
+| `IMPROVEMENTS.md` | Remaining work awaiting scope agreement |
+| `NEXT_PROMPT.md` | Current or next task handoff and active resources |
 
 Change the daily schedule in `.github/workflows/github_workflows_build.yml`.
 Change styles in `index.html`; retain search and URL contracts when editing the UI.

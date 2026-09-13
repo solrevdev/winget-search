@@ -38,7 +38,8 @@ After deployment, use Search Console to submit or confirm
 `https://solrevdev.com/winget-search/sitemap.xml`, inspect both public pages, and
 check Dataset creator/license validation. A historical validation request is not a
 current result. Check the public homepage in Google's Rich Results Test too.
-Keep release checks and resources in [NEXT_STEPS.md](NEXT_STEPS.md).
+Follow the [release checks](README.md#work-across-sessions); keep active resources
+in [NEXT_PROMPT.md](NEXT_PROMPT.md).
 
 ## Sources
 
