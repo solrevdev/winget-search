@@ -1,42 +1,26 @@
 Continue work in /Users/solrevdev/Projects/winget-search.
+Read NEXT_STEPS.md first. It holds current status, release evidence and resources.
+Use SEO.md for the public URL contract and IMPROVEMENTS.md for later backlog.
 
-Read NEXT_STEPS.md first, then this file. SEO.md records the public URL contract,
-SEO decisions, primary sources and release checks. IMPROVEMENTS.md is historical.
+PRs #5, #6 and #7 are merged, deployed and verified. Master is clean and synced;
+completed feature branches and task-owned servers/browsers are cleaned up.
+Propose one bounded batch for the remaining issue #4 work and wait for agreement:
+README duplication/license/URL/Pages claims; reusable upstream cache with reliable
+refresh/default-branch handling; and safe starting-branch restoration in
+force_pages_update.sh, including dirty/detached states and failure tests.
+The footer and shared public URL/404 logic are done. Reuse build_site.py and
+site_config.json. Start a fresh branch from synced master; do not reopen SEO work.
 
-PR #7 is merged, deployed and verified. PR #5's conflict repair is c5de9d1.
-The user approved the SEO batch for PR #5 plus useful issue #1 work. Implementation
-and local checks are complete on feat/seo-meta-sitemap-dataset in the existing
-PR #5. Check its current head, CI and mergeability before acting.
+Keep hosting free on GitHub Pages, extraction in Actions and search in the browser.
+Preserve packages.json, query/filter URLs, ranking, copy and Details. Retain all
+38 Node and 19 Python tests, add focused workflow/helper tests, and check affected
+browser flows. Use subagents when useful with clear ownership and resource reports.
 
-Wait for explicit merge/deployment approval. No deployment or issue closure was
-authorized for this handoff. After approval, merge and verify both Build and Deploy
-and Pages publication, then live metadata, catalog counts/dates, sitemap, preview
-image, redirect and desktop/mobile search. Preserve the feature branch until that
-verification passes; then remove it and sync master.
+Keep docs lean: replace resolved status, retain a short done/next/backlog log, and
+link PRs for detail. Record resources as soon as they start. At handoff, tear down
+verified task-owned resources when authorized and preserve unrelated ones.
 
-All 38 Node tests pass. All nine Python extraction regressions plus ten build tests
-pass (19 Python total). Generated HTML/JSON-LD/XML/images and workflow checks pass.
-Search and SEO browser suites pass at 1280px and 375px. Axe light/dark page and Copy
-state checks pass after fixing contrast and keyboard access. Review NEXT_STEPS.md
-for evidence and resource status. All PR #5 servers/browser sessions are stopped;
-temporary evidence is inert. Preserve unrelated resources.
-
-Keep GitHub Pages hosting free, extraction in Actions, and search in the browser.
-Preserve packages.json and query/filter URLs. site_config.json's public_base_url
-feeds build_site.py's metadata, sitemap, guide examples and 404 destination.
-
-PR #5 includes only the shared URL/redirect portion of issue #4. Keep README,
-cache/default-branch logic and force_pages_update.sh maintenance separate. Start
-that later branch from synced master after PR #5 merges, reuse its URL rule and
-check mergeability again. Propose the next bounded batch and await agreement.
-
-Search Console still needs an account check for sitemap submission, URL indexing,
-and the old Dataset creator/license validation status. Run Rich Results Test on
-the deployed homepage. Do not close issues before their remaining criteria and
-required live checks pass.
-
-Use subagents when useful with clear file ownership; they must report resources
-to the parent. Record any server, browser, background job or preview immediately
-in NEXT_STEPS.md with owner, purpose, PID/tool session, browser name, port/URL,
-paths and status. At handoff list active resources and offer cleanup; perform any
-already-authorized cleanup and verify it. Update both handoff files each round.
+Leave the PR tested and ready for review. Wait for merge approval, then verify
+Build and Deploy, Pages publication and the live site before branch cleanup.
+Close issue #4 only when its remaining criteria pass. Search Console account work
+is a separate follow-up in NEXT_STEPS.md. Update this prompt for the next batch.
