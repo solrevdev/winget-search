@@ -14,10 +14,11 @@ A fast, modern web search interface for [Windows Package Manager (winget)](https
 
 ## Features
 
-- 🔍 **Instant search** - Search by package ID, name, description, publisher, or tags
+- 🔍 **Ranked search** - Search by package ID, name, moniker, description, publisher, or tags; exact matches rank first
+- 📄 **Compact results** - Scan short summaries and expand Details for descriptions, publisher, tags, license, and homepage
 - 🧭 **Example searches** - Start from grouped dev tool and everyday app queries on the blank home screen
 - 📋 **One-click copy** - Copy `winget install` commands instantly
-- 🌐 **English-only results** - Filters to show only English package descriptions
+- 🌐 **English metadata when available** - Merges English fields with the package's default locale
 - 🔄 **Auto-updated** - Daily updates via GitHub Actions
 - 🌓 **Dark mode** - Automatic theme based on system preferences
 - 📱 **Mobile-friendly** - Responsive design for all devices
@@ -33,7 +34,7 @@ Visit the live site: `https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/`
 1. **Data Extraction**: GitHub Actions runs daily to:
    - Clone the official [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) repository
    - Parse all YAML manifest files
-   - Extract package metadata (filtering for English descriptions)
+   - Merge English package metadata with default-locale fields
    - Generate a `packages.json` file with the latest versions only
 
 2. **Search Interface**: A static HTML page that:
@@ -137,6 +138,16 @@ The site uses CSS custom properties for theming. Modify the `:root` variables in
 
 ### Local Testing
 
+Run the regression checks with Python dependencies installed and Node.js 22 or later:
+
+```bash
+uv run --no-project --with pyyaml --with packaging python -m unittest discover -s tests -p 'test_*.py'
+node --test tests/search.test.cjs
+```
+
+The tests cover locale merging, singleton manifests, monikers, exact-match ranking,
+punctuation, and result counts. Pull requests run both suites in GitHub Actions.
+
 You can test locally using either traditional pip or modern uv (recommended).
 
 #### Option 1: Using uv (Recommended)
@@ -234,7 +245,8 @@ After starting the server, open `http://localhost:8000` in your browser.
 
 The extraction script (`extract_packages.py`):
 - Parses winget manifest YAML files
-- Filters for English-only descriptions (`.locale.en-US.yaml` files)
+- Merges nonempty English locale fields over the declared default locale
+- Preserves singleton metadata, monikers, and separate short and full descriptions
 - Deduplicates packages, keeping only the latest version
 - Uses proper semantic versioning comparison
 - Outputs a structured JSON with metadata
@@ -246,6 +258,10 @@ The extraction script (`extract_packages.py`):
 - Search is performed client-side for instant results
 - Ranked search results are capped at 200 items for performance
 - Debounced search input (300ms) for smooth typing
+
+Exact package IDs rank above exact monikers, exact names, prefixes, and other matches.
+The common query `vs code` expands to the `vscode` moniker. Punctuation stays intact
+for names such as `C++`, `C#`, `.NET`, and `Node.js`. Typo tolerance is future work.
 
 ## Contributing
 
