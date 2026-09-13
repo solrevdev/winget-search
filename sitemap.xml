@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- build_site.py supplies public URLs and dates from catalog and Git history. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://solrevdev.com/winget-search/</loc>
-    <lastmod>2025-05-29</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <loc>{{PUBLIC_BASE_URL}}</loc>
   </url>
   <url>
-    <loc>https://solrevdev.com/winget-search/agent-access.html</loc>
-    <lastmod>2025-05-29</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
+    <loc>{{AGENT_URL}}</loc>
   </url>
 </urlset>
