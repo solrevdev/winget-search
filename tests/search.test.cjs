@@ -3,11 +3,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
+const WingetSearch = require('../search.js');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)[1];
 const elements = new Map();
 const context = vm.createContext({
+  WingetSearch,
   document: {
     getElementById(id) {
       if (!elements.has(id)) elements.set(id, { textContent: '', addEventListener() {} });
@@ -21,10 +23,10 @@ const context = vm.createContext({
 vm.runInContext(script, context);
 
 function ranked(query, packages) {
-  const normalized = context.normalizeSearchQuery(query);
-  const tokens = context.tokenizeQuery(normalized);
+  const normalized = WingetSearch.normalizeSearchQuery(query);
+  const tokens = WingetSearch.tokenizeQuery(normalized);
   return packages
-    .map(pkg => ({ id: pkg.id, score: context.scorePackage(pkg, normalized, tokens) }))
+    .map(pkg => ({ id: pkg.id, score: WingetSearch.scorePackage(pkg, normalized, tokens) }))
     .filter(result => result.score > 0)
     .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
     .map(result => result.id);
