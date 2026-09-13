@@ -19,8 +19,7 @@ concurrency:
     group: "pages"
     cancel-in-progress: false
 
-# This workflow automatically deploys to GitHub Pages using GitHub Actions
-# No manual configuration needed - it handles everything!
+# Pages must be enabled for gh-pages; publication follows this build separately.
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -30,29 +29,27 @@ jobs:
               with:
                   fetch-depth: 0
 
+            - name: Set UTC cache date
+              id: cache-date
+              run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
             - name: Cache winget-pkgs repo
               uses: actions/cache@v4
               id: cache-winget
               with:
                   path: winget-pkgs
-                  key: winget-pkgs-${{ github.run_id }}
+                  key: winget-pkgs-v2-${{ runner.os }}-${{ steps.cache-date.outputs.date }}
                   restore-keys: |
-                      winget-pkgs-
+                      winget-pkgs-v2-${{ runner.os }}-
 
+            # Always fetch, even on exact hits. Checkout resolves the upstream default branch.
             - name: Checkout winget-pkgs repo
-              if: steps.cache-winget.outputs.cache-hit != 'true'
               uses: actions/checkout@v4
               with:
                   repository: microsoft/winget-pkgs
                   path: winget-pkgs
                   fetch-depth: 1
-
-            - name: Update winget-pkgs if cached
-              if: steps.cache-winget.outputs.cache-hit == 'true'
-              run: |
-                  cd winget-pkgs
-                  git fetch origin
-                  git reset --hard origin/master
+                  persist-credentials: false
 
             - name: Set up Python
               uses: actions/setup-python@v5
@@ -108,10 +105,9 @@ jobs:
               # - Pushes the built site to that branch
               # - GitHub Pages automatically serves from this deployment
 
-            - name: Wait for deployment
+            - name: Report publication status
               run: |
-                  echo "Deployment complete. GitHub Pages will update within a few minutes."
-                  echo "If using a custom domain, it may take longer due to CDN caching."
+                  echo "Built files pushed to gh-pages. Check the separate Pages publication before verifying the live site."
 
             - name: Create deployment summary
               if: success()

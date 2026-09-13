@@ -6,16 +6,13 @@ issue numbers. Check current code before choosing work.
 
 ## Maintenance
 
-Keep issue #4's remaining maintenance work separate from new search features.
-The shared public URL and 404 destination were resolved in PR #5; see
+Issue #4's README, cache and Pages helper work is implemented and awaiting PR
+review/release. See [NEXT_STEPS.md](NEXT_STEPS.md) for checks and remaining release
+steps. The shared public URL and 404 destination shipped in PR #5; see
 [SEO.md](SEO.md) before changing either.
 
 | ID | Remaining work | Files / constraint |
 |---|---|---|
-| #2 | Replace the per-run cache key. Prefix restores already reuse the Git directory; always refresh upstream, including future exact cache hits. | `.github/workflows/github_workflows_build.yml`; test restored and missing caches. |
-| #20 | Resolve upstream's default branch instead of resetting to `origin/master`. | Build workflow; keep daily extraction fresh. |
-| #21 | Make the Pages helper restore the starting branch and stop on errors. Avoid staging unrelated work. | `force_pages_update.sh`; review whether workflow dispatch can replace it. |
-| #4, #22 | Remove duplicate README summaries and fix the nonexistent `LICENSE` link/tree entry. | `README.md`; the license file is `license.txt`. |
 | #17 | Trim unused .NET/template settings where safe. | `.editorconfig`, `omnisharp.json`, `.dockerignore`; retain useful editor rules. |
 | #18 | Replace the license holder placeholder with the confirmed holder. | `license.txt`. |
 | #25 | Set one catalog tracking policy. The file is tracked despite its ignore rule and README's claim that it is not in source. | `packages.json`, `.gitignore`, `README.md`; preserve the public endpoint. |
