@@ -1,13 +1,18 @@
 import contextlib
+import datetime
 import io
 import json
+import os
 from pathlib import Path
+import random
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import yaml
+from packaging.version import Version
 
-from extract_packages import extract_package_info, main
+from extract_packages import extract_package_info, find_latest_version_dirs, main
 
 
 class ExtractPackageInfoTests(unittest.TestCase):
@@ -160,6 +165,119 @@ class ExtractPackageInfoTests(unittest.TestCase):
         self.assertEqual(catalog["packages"][0]["moniker"], "app")
         self.assertEqual(catalog["packages"][0]["shortDescription"], "Summary")
         self.assertEqual(catalog["packages"][0]["id"], "Example.App")
+
+
+class VersionSelectionTests(unittest.TestCase):
+    FIXTURES = Path(__file__).parent / "fixtures" / "version-ordering"
+    EXPECTED = {
+        "Alibaba.AliWorkbench": "9.63.20N",
+        "Authpass.Authpass": "1.9.11_2007",
+        "Ablaze.Floorp": "12.16.4@153.0",
+        "Artempyanykh.Marksman": datetime.date(2026, 2, 8),
+    }
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def manifest(self, value, directory, filename="Example.App.yaml"):
+        path = self.root / "Example" / "App" / directory
+        path.mkdir(parents=True, exist_ok=True)
+        (path / filename).write_text(yaml.safe_dump({
+            "PackageIdentifier": "Example.App", "PackageVersion": value,
+            "ManifestType": "version", "DefaultLocale": "en-US",
+        }), encoding="utf-8")
+        return str(path)
+
+    def selections(self, root):
+        walk = list(os.walk(root))
+        shuffled = list(walk)
+        random.Random(42).shuffle(shuffled)
+        for entries in (walk, list(reversed(walk)), shuffled):
+            entries = [(path, dirs, list(reversed(files))) for path, dirs, files in entries]
+            with patch("extract_packages.os.walk", return_value=entries):
+                yield find_latest_version_dirs(root)
+
+    def assert_winner(self, values, expected):
+        for index, value in enumerate(values):
+            self.manifest(value, str(index))
+        for selected in self.selections(self.root):
+            self.assertEqual(selected["Example.App"][0], expected)
+
+    def test_real_manifests_select_same_newer_versions_in_every_traversal(self):
+        for selected in self.selections(self.FIXTURES):
+            self.assertEqual({key: value[0] for key, value in selected.items()}, self.EXPECTED)
+
+    def test_standard_version_order_matches_packaging_for_every_pair(self):
+        values = ["0.0.0.dev1", "0.0.0rc1", "0.0.0", "1.0.dev1", "1.0a2",
+                  "1.0b1", "1.0rc1", "1.0", "1.0+build.2", "1.0+build.10",
+                  "1.0.post1", "1.9", "1.10", "2.0.0.1", "1!0.1"]
+        for first in values:
+            for second in values:
+                with self.subTest(first=first, second=second):
+                    self.assert_winner([first, second], max([first, second], key=Version))
+
+    def test_date_strings_and_yaml_dates_compare_with_dotted_dates(self):
+        for date in ("2026-02-08", datetime.date(2026, 2, 8)):
+            with self.subTest(date=date):
+                self.assert_winner(["2024.12.18", date], date)
+
+    def test_at_suffix_orders_release_then_numeric_build(self):
+        self.assert_winner(["12.16.3@999.0", "12.16.4", "12.16.4@153.9",
+                            "12.16.4@153.10"], "12.16.4@153.10")
+
+    def test_unknown_versions_use_numeric_runs(self):
+        self.assert_winner(["build9", "build11", "build2"], "build11")
+
+    def test_leading_zero_and_case_ties_use_original_text(self):
+        self.assert_winner(["build09", "BUILD9", "build9"], "build9")
+
+    def test_text_and_numeric_tokens_do_not_raise_type_errors(self):
+        self.assert_winner(["nightly", "99-custom", "9-custom"], "99-custom")
+
+    def test_recognized_zero_and_prerelease_outrank_unknown_values(self):
+        for known in ("0.0.0", "0.0.0rc1"):
+            with self.subTest(known=known):
+                self.assert_winner(["999-custom", known], known)
+
+    def test_normalizers_reject_invalid_dates_and_non_numeric_at_suffixes(self):
+        self.assert_winner(["2026-02-30", "2026-13-01", "99.0@nightly",
+                            "99.0@2.0-extra", "1.0"], "1.0")
+
+    def test_equal_standard_versions_use_original_text(self):
+        self.assert_winner(["1.0", "1.0.0", "v1.0"], "v1.0")
+
+    def test_equal_versions_use_relative_path(self):
+        self.manifest("1.0", "a")
+        expected_path = self.manifest("1.0", "z")
+        for selected in self.selections(self.root):
+            self.assertEqual(selected["Example.App"], ("1.0", expected_path))
+
+    def test_manifest_filename_order_is_stable_and_bad_yaml_is_skipped(self):
+        path = Path(self.manifest("2.0", "1", "z.yaml"))
+        self.manifest("1.0", "1", "b.yaml")
+        (path / "a.yaml").write_text("- not a mapping\n", encoding="utf-8")
+        (path / "aa.yaml").write_text("bad: [", encoding="utf-8")
+        (path / "ab.yaml").write_text("PackageVersion: 2026-02-30\n", encoding="utf-8")
+        for selected in self.selections(self.root):
+            self.assertEqual(selected["Example.App"][0], "1.0")
+
+    def test_catalog_keeps_original_versions_and_existing_shape(self):
+        output = self.root / "packages.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            main(self.FIXTURES, output)
+        catalog = json.loads(output.read_text(encoding="utf-8"))
+        self.assertEqual(set(catalog), {"packages", "metadata"})
+        self.assertEqual(set(catalog["metadata"]), {"total", "extracted_at", "source"})
+        self.assertEqual(catalog["metadata"]["total"], 4)
+        self.assertEqual(catalog["metadata"]["source"], "microsoft/winget-pkgs")
+        self.assertEqual({pkg["id"]: pkg["version"] for pkg in catalog["packages"]},
+                         {key: str(value) for key, value in self.EXPECTED.items()})
+        for pkg in catalog["packages"]:
+            self.assertEqual(set(pkg), {"id", "name", "description", "publisher",
+                             "version", "shortDescription", "moniker", "tags",
+                             "homepage", "license"})
 
 
 if __name__ == "__main__":

@@ -1,18 +1,16 @@
 # Remaining work
 
-This is the single backlog. [NEXT_STEPS.md](NEXT_STEPS.md) holds release evidence,
-working checks and resources; [NEXT_PROMPT.md](NEXT_PROMPT.md) starts the next task.
+This is the single backlog. [README.md](README.md#work-across-sessions) holds the
+working rules; [NEXT_PROMPT.md](NEXT_PROMPT.md) holds the task handoff and resources.
 Check the code and GitHub before choosing work. These are proposals, not approved
 implementation scope. The tracked empty catalog placeholder is documented in the
 README; that policy is settled.
 
-## Recommended next batch
+## In review
 
-**Version ordering:** `extract_packages.py` maps every version rejected by
-`packaging.version` to `0.0.0`. Ties can select whichever directory is visited first.
-Collect real manifest examples, agree a deterministic ordering rule, then add
-focused fixtures before changing latest-version selection. Preserve the catalog
-format and valid-version ordering.
+**Version ordering:** the approved fix and doc consolidation are on
+`codex/version-ordering`. Local checks passed; merge needs approval. See
+[NEXT_PROMPT.md](NEXT_PROMPT.md). Remove this entry after release verification.
 
 ## Maintenance
 

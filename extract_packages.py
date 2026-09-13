@@ -3,6 +3,7 @@ import sys
 import yaml
 import json
 import datetime
+import re
 from packaging import version
 
 class EnhancedJSONEncoder(json.JSONEncoder):
@@ -11,13 +12,31 @@ class EnhancedJSONEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-def parse_version(ver_str):
-    """Parse version string for proper comparison"""
+def version_sort_key(value):
+    """Keep PEP 440 ordering, with a bounded fallback for WinGet versions."""
+    text = value.isoformat() if isinstance(value, datetime.date) else str(value)
     try:
-        return version.parse(ver_str)
-    except:
-        # Fallback for non-standard versions
-        return version.parse("0.0.0")
+        return (1, version.parse(value), text)
+    except (version.InvalidVersion, TypeError):
+        pass
+
+    # YAML can turn an unquoted date version into datetime.date.
+    if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", text):
+        try:
+            datetime.date.fromisoformat(text)
+        except ValueError:
+            pass
+        else:
+            return (1, version.parse(text.replace("-", ".")), text)
+    if re.fullmatch(r"[0-9]+(?:\.[0-9]+)+@[0-9]+(?:\.[0-9]+)+", text):
+        return (1, version.parse(text.replace("@", "+")), text)
+
+    # Unknown labels have no universal release order. Keep recognized versions
+    # ahead of them, then use natural order and original text to break ties.
+    tokens = tuple((1, int(part)) if part.isascii() and part.isdigit()
+                   else (0, part.casefold())
+                   for part in re.findall(r"[0-9]+|[^0-9]+", text))
+    return (0, tokens, text)
 
 def extract_package_info(manifest_dir):
     """Merge default and English metadata, including singleton manifests."""
@@ -84,45 +103,35 @@ def extract_package_info(manifest_dir):
     return package_info if package_info["id"] else None
 
 def find_latest_version_dirs(manifests_dir):
-    """Find the latest version directory for each package"""
+    """Select one version per package without depending on traversal order."""
     packages = {}  # package_id -> (version, directory_path)
-    
+    sort_keys = {}
+
     for root, dirs, files in os.walk(manifests_dir):
-        # Check if this directory contains manifest files
-        yaml_files = [f for f in files if f.endswith(('.yaml', '.yml'))]
-        if not yaml_files:
-            continue
-            
-        # Extract package ID from path
         rel_path = os.path.relpath(root, manifests_dir)
-        path_parts = rel_path.split(os.sep)
-        
-        # winget structure: publisher/package_name/version/
-        if len(path_parts) >= 3:
-            package_id = None
-            
-            # Try to get package ID from a manifest file
-            for yaml_file in yaml_files:
-                if '.locale.' not in yaml_file and '.installer.' not in yaml_file:
-                    try:
-                        with open(os.path.join(root, yaml_file), encoding="utf-8") as f:
-                            doc = yaml.safe_load(f)
-                            package_id = doc.get("PackageIdentifier")
-                            version_str = doc.get("PackageVersion")
-                            break
-                    except:
-                        continue
-            
-            if package_id and version_str:
-                if package_id not in packages:
-                    packages[package_id] = (version_str, root)
-                else:
-                    # Compare versions
-                    current_ver = parse_version(packages[package_id][0])
-                    new_ver = parse_version(version_str)
-                    if new_ver > current_ver:
-                        packages[package_id] = (version_str, root)
-    
+        if len(rel_path.split(os.sep)) < 3:
+            continue
+        for filename in sorted(files):
+            if (not filename.endswith(('.yaml', '.yml'))
+                    or '.locale.' in filename or '.installer.' in filename):
+                continue
+            try:
+                with open(os.path.join(root, filename), encoding="utf-8") as manifest:
+                    doc = yaml.safe_load(manifest)
+            except (OSError, yaml.YAMLError, ValueError):
+                continue
+            if not isinstance(doc, dict):
+                continue
+            package_id = doc.get("PackageIdentifier")
+            value = doc.get("PackageVersion")
+            if not isinstance(package_id, str) or not package_id or not value:
+                continue
+            key = (version_sort_key(value), rel_path.replace(os.sep, "/"))
+            if package_id not in sort_keys or key > sort_keys[package_id]:
+                packages[package_id] = (value, root)
+                sort_keys[package_id] = key
+            break
+
     return packages
 
 def main(manifests_dir, out_path):
