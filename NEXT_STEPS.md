@@ -14,7 +14,8 @@ unresolved work forward. Git history and PRs retain detailed past investigations
 - Live site: https://solrevdev.com/winget-search/
 - PR #5 merged at `1d87f32`, deployed and verified live; its branch is cleaned up.
 - Issue #4 maintenance is on `codex/issue-4-maintenance`, based on synced `master`
-  at `a22dc4d`. Implementation is tested; PR review and release are next.
+  at `a22dc4d`. Implementation is tested in
+  [PR #8](https://github.com/solrevdev/winget-search/pull/8); review and release are next.
 
 ## Completed
 
@@ -34,9 +35,11 @@ headings and image requirements are implemented; Google ignores its proposed
 keywords meta tag. Search Console account work remains separate below.
 PR #5 also addresses issue #4's redirect; issue #4 is only partly complete.
 
-## Issue #4 maintenance: ready for PR review
+## Issue #4 maintenance: PR #8 awaits review
 
-The agreed batch is implemented:
+The agreed batch is implemented in
+[PR #8](https://github.com/solrevdev/winget-search/pull/8). Check its latest CI result
+before merging; merge approval is still required:
 
 - README duplication, license link, live URL and Pages claims corrected; stale
   search/development guidance trimmed.

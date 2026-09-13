@@ -7,7 +7,7 @@ uses a UTC daily cache key and unconditional upstream checkout, and isolates the
 Pages helper in a temporary worktree so the starting branch stays unchanged.
 Dirty/detached starts are rejected; failed work is retained for inspection.
 
-Check the PR and its CI results. Leave it ready for review and wait for explicit
+Check PR #8 (https://github.com/solrevdev/winget-search/pull/8) and its CI results. Leave it ready for review and wait for explicit
 merge approval. Do not treat implementation agreement as merge approval.
 After approval, merge and verify Build and Deploy, separate Pages publication,
 and the live assets and desktop/mobile browser flows. Confirm the v2 cache save

@@ -7,7 +7,8 @@ issue numbers. Check current code before choosing work.
 ## Maintenance
 
 Issue #4's README, cache and Pages helper work is implemented and awaiting PR
-review/release. See [NEXT_STEPS.md](NEXT_STEPS.md) for checks and remaining release
+[#8 review/release](https://github.com/solrevdev/winget-search/pull/8).
+See [NEXT_STEPS.md](NEXT_STEPS.md) for checks and remaining release
 steps. The shared public URL and 404 destination shipped in PR #5; see
 [SEO.md](SEO.md) before changing either.
 
