@@ -147,6 +147,43 @@
       margin-bottom: 20px;
     }
 
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .filter-chip, .clear-filters {
+      padding: 8px 12px;
+      min-height: 44px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font: inherit;
+      cursor: pointer;
+      overflow-wrap: anywhere;
+      max-width: 100%;
+    }
+
+    .filter-chip:hover, .clear-filters:hover {
+      border-color: var(--accent-color);
+    }
+
+    .filter-chip:focus-visible, .clear-filters:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 2px;
+    }
+
+    .search-note {
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .search-note:empty, .active-filters:empty { display: none; }
+
     .empty-state {
       border: 1px solid var(--border-color);
       border-radius: 16px;
@@ -284,6 +321,16 @@
       gap: 8px;
     }
 
+    .pkg-title {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      overflow-wrap: anywhere;
+    }
+
     .pkg-name {
       font-weight: 600;
       font-size: 1.1em;
@@ -305,6 +352,8 @@
       background-color: var(--bg-primary);
       padding: 2px 8px;
       border-radius: 12px;
+      overflow-wrap: anywhere;
+      max-width: 100%;
     }
 
     .pkg-badges {
@@ -312,6 +361,7 @@
       gap: 6px;
       align-items: center;
       flex-wrap: wrap;
+      max-width: 100%;
     }
 
     .license-badge {
@@ -327,6 +377,34 @@
       color: var(--text-secondary);
       margin: 8px 0;
       font-size: 0.95em;
+      overflow-wrap: anywhere;
+    }
+
+    .pkg-summary {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .pkg-details {
+      margin-top: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .pkg-details summary {
+      width: fit-content;
+      color: var(--accent-color);
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .pkg-details summary:hover {
+      text-decoration: underline;
+    }
+
+    .pkg-details[open] summary {
+      margin-bottom: 8px;
     }
 
     .pkg-meta {
@@ -392,7 +470,7 @@
       display: flex;
       gap: 8px;
       margin-top: 12px;
-      flex-wrap: wrap;
+      align-items: stretch;
     }
 
     .copy-btn {
@@ -407,6 +485,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-shrink: 0;
     }
 
     .copy-btn:hover {
@@ -524,10 +603,12 @@
   <div class="search-container">
     <input 
       type="text" 
-      id="search" 
+      id="search"
+      aria-label="Search packages"
       placeholder="Search by package name, ID, or description..." 
       autocomplete="off"
       autofocus
+      disabled
     >
     <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="11" cy="11" r="8"/>
@@ -537,7 +618,9 @@
   
   <div class="keyboard-hint">Press <kbd>/</kbd> to focus search • <kbd>Esc</kbd> to clear</div>
   
-  <div id="stats" class="stats"></div>
+  <div id="active-filters" class="active-filters" role="group" aria-label="Active filters"></div>
+  <div id="search-note" class="search-note"></div>
+  <div id="stats" class="stats" role="status" aria-live="polite"></div>
   
   <div id="loading" class="loading">Loading packages...</div>
   <div id="error" class="error" style="display: none;"></div>
@@ -555,12 +638,21 @@
     </p>
   </footer>
 
+  <script src="vendor/minisearch-7.2.0.js"></script>
+  <script src="search.js"></script>
   <script>
     let packages = [];
     let currentResults = [];
     let lastMatchCount = 0;
     let visibleCount = 0;
     let searchTimeout;
+    let searchEngine;
+    let activeFilters = { publisher: '', tags: [] };
+    let editingQuery = false;
+    let editSession = 0;
+    let currentQuery = '';
+    const filtersDiv = document.getElementById('active-filters');
+    const searchNote = document.getElementById('search-note');
     const MAX_SEARCH_RESULTS = 200;
     const PAGE_SIZE = 25;
     const resultsDiv = document.getElementById('results');
@@ -597,16 +689,31 @@
         searchInput.focus();
       } else if (e.key === 'Escape' && document.activeElement === searchInput) {
         searchInput.value = '';
-        showResults('');
+        showResults('', { historyMode: 'push' });
       }
     });
 
-    window.addEventListener('popstate', () => {
-      if (!packages.length) return;
-      const query = new URLSearchParams(window.location.search).get('q') || '';
-      searchInput.value = query;
-      showResults(query, { updateHistory: false });
-    });
+    function readSearchState(search) {
+      const params = new URLSearchParams(search);
+      return {
+        query: params.get('q') || '',
+        filters: WingetSearch.normalizeFilters({
+          publisher: params.get('publisher') || '',
+          tags: params.getAll('tag'),
+        }),
+      };
+    }
+
+    function restoreSearchState() {
+      clearTimeout(searchTimeout);
+      const state = readSearchState(window.location.search);
+      activeFilters = state.filters;
+      searchInput.value = state.query;
+      editingQuery = false;
+      showResults(state.query, { updateHistory: false });
+    }
+
+    window.addEventListener('popstate', restoreSearchState);
 
     // Load packages
     fetch('packages.json')
@@ -626,26 +733,31 @@
           packages = data;
         }
         
+        searchEngine = WingetSearch.createEngine(packages);
+        searchInput.disabled = false;
         loadingDiv.style.display = 'none';
-        const initialQuery = new URLSearchParams(window.location.search).get('q') || '';
-        if (initialQuery) {
-          searchInput.value = initialQuery;
-        }
-        showResults(initialQuery, { updateHistory: false });
+        restoreSearchState();
       })
       .catch(error => {
         console.error('Error loading packages:', error);
         loadingDiv.style.display = 'none';
         errorDiv.style.display = 'block';
-        errorDiv.textContent = 'Failed to load package data. Please try refreshing the page.';
+        errorDiv.textContent = 'Failed to load search or package data. Please try refreshing the page.';
       });
 
-    // Search functionality
-    searchInput.addEventListener('input', function() {
+    searchInput.addEventListener('input', () => {
       clearTimeout(searchTimeout);
+      const session = editSession;
       searchTimeout = setTimeout(() => {
-        showResults(this.value);
+        showResults(searchInput.value, { historyMode: editingQuery ? 'replace' : 'push' });
+        editingQuery = session === editSession;
       }, 300);
+    });
+
+    searchInput.addEventListener('blur', () => {
+      // A late debounce must not join the next edit session or replace a clicked result.
+      editSession += 1;
+      editingQuery = false;
     });
 
     function escapeHtml(text) {
@@ -680,10 +792,7 @@
     }
 
     function tokenizeQuery(query) {
-      return String(query || '')
-        .toLowerCase()
-        .split(/\s+/)
-        .filter(Boolean);
+      return WingetSearch.tokenizeQuery(query);
     }
 
     function highlightMatch(text, query) {
@@ -696,117 +805,122 @@
       return escapedText.replace(regex, '<mark>$1</mark>');
     }
 
-    function updateSearchUrl(query) {
+    function updateSearchUrl(query, mode = 'replace') {
       const url = new URL(window.location.href);
-      if (query) {
-        url.searchParams.set('q', query);
-      } else {
-        url.searchParams.delete('q');
-      }
+      for (const key of ['q', 'publisher', 'tag']) url.searchParams.delete(key);
+      if (query) url.searchParams.set('q', query);
+      if (activeFilters.publisher) url.searchParams.set('publisher', activeFilters.publisher);
+      activeFilters.tags.forEach(tag => url.searchParams.append('tag', tag));
       const next = `${url.pathname}${url.search}${url.hash}`;
-      history.replaceState({ query }, '', next);
+      const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (next !== current) history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', next);
     }
 
-    function updateStats(query, totalMatches, showingCount, truncated) {
-      if (!query) {
+    function hasFilters() {
+      return Boolean(activeFilters.publisher || activeFilters.tags.length);
+    }
+
+    function renderFilters() {
+      const chips = [];
+      if (activeFilters.publisher) chips.push(['publisher', activeFilters.publisher]);
+      activeFilters.tags.forEach(tag => chips.push(['tag', tag]));
+      filtersDiv.innerHTML = chips.map(([field, value]) => {
+        const label = `${field === 'publisher' ? 'Publisher' : 'Tag'}: ${value}`;
+        return `<button type="button" class="filter-chip" data-remove-filter="${field}" data-filter-value="${escapeAttribute(value)}" aria-label="Remove ${escapeAttribute(label)}">${escapeHtml(label)} <span aria-hidden="true">×</span></button>`;
+      }).join('') + (chips.length ? '<button type="button" class="clear-filters" data-clear-filters>Clear filters</button>' : '');
+    }
+
+    filtersDiv.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button || !filtersDiv.contains(button)) return;
+      updateSearchUrl(searchInput.value.trim());
+      if (button.hasAttribute('data-clear-filters')) {
+        activeFilters = { publisher: '', tags: [] };
+      } else if (button.dataset.removeFilter === 'publisher') {
+        activeFilters.publisher = '';
+      } else if (button.dataset.removeFilter === 'tag') {
+        activeFilters.tags = activeFilters.tags.filter(tag => tag !== button.dataset.filterValue);
+      }
+      showResults(searchInput.value, { historyMode: 'push' });
+      searchInput.focus();
+    });
+
+    function updateStats(query, totalMatches, showingCount) {
+      if (!query && !hasFilters()) {
         statsDiv.textContent = `${packages.length.toLocaleString()} packages available • try a common search below`;
         return;
       }
 
       if (!totalMatches) {
-        statsDiv.textContent = `0 matches for "${query}"`;
+        statsDiv.textContent = query ? `0 matches for "${query}"${hasFilters() ? ' with these filters' : ''}` : '0 matches with these filters';
         return;
       }
 
-      if (truncated) {
-        statsDiv.textContent = `${totalMatches.toLocaleString()} matches • showing ${showingCount.toLocaleString()} of top ${MAX_SEARCH_RESULTS.toLocaleString()}`;
-        return;
-      }
-
-      statsDiv.textContent = `${totalMatches.toLocaleString()} matches • showing ${showingCount.toLocaleString()}`;
+      const limitNote = totalMatches > MAX_SEARCH_RESULTS
+        ? ` • limited to the top ${MAX_SEARCH_RESULTS.toLocaleString()}; refine your search for more`
+        : '';
+      statsDiv.textContent = `Showing ${showingCount.toLocaleString()} of ${totalMatches.toLocaleString()} matches${limitNote}`;
     }
 
-    function scorePackage(pkg, queryLower, tokens) {
-      const id = (pkg.id || '').toLowerCase();
-      const name = (pkg.name || '').toLowerCase();
-      const publisher = (pkg.publisher || '').toLowerCase();
-      const description = (pkg.description || pkg.shortDescription || '').toLowerCase();
-      const tags = Array.isArray(pkg.tags)
-        ? pkg.tags.filter(tag => typeof tag === 'string').map(tag => tag.toLowerCase())
-        : [];
-
-      const searchable = `${id} ${name} ${publisher} ${description} ${tags.join(' ')}`;
-      if (!tokens.every(token => searchable.includes(token))) {
-        return 0;
-      }
-
-      let score = 0;
-
-      if (id === queryLower) score += 120;
-      else if (id.startsWith(queryLower)) score += 90;
-      else if (id.includes(queryLower)) score += 60;
-
-      if (name === queryLower) score += 90;
-      else if (name.startsWith(queryLower)) score += 70;
-      else if (name.includes(queryLower)) score += 40;
-
-      if (publisher.includes(queryLower)) score += 18;
-      if (description.includes(queryLower)) score += 14;
-      if (tags.some(tag => tag === queryLower)) score += 25;
-      else if (tags.some(tag => tag.includes(queryLower))) score += 12;
-
-      for (const token of tokens) {
-        if (id.startsWith(token)) score += 8;
-        else if (id.includes(token)) score += 4;
-        if (name.includes(token)) score += 4;
-        if (publisher.includes(token)) score += 2;
-        if (description.includes(token)) score += 1;
-        if (tags.some(tag => tag.includes(token))) score += 2;
-      }
-
-      return score;
+    function escapeAttribute(value) {
+      return escapeHtml(String(value ?? '')).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
+
+    resultsDiv.addEventListener('click', event => {
+      const button = event.target.closest('button[data-copy-command], button[data-filter-value]');
+      if (!button || !resultsDiv.contains(button)) return;
+      if (button.hasAttribute('data-copy-command')) {
+        copyCommand(button, button.dataset.copyCommand);
+      } else {
+        filterBy(button.dataset.filterField, button.dataset.filterValue);
+      }
+    });
 
     function renderPackage(pkg, query) {
       const command = `winget install -e --id ${pkg.id}`;
       const description = pkg.description || pkg.shortDescription || '';
+      const shortDescription = pkg.shortDescription || description;
       const tags = Array.isArray(pkg.tags)
         ? pkg.tags.filter(tag => tag && typeof tag === 'string')
         : [];
       const tagsHtml = tags.length
         ? tags
-          .map(tag => `<button type="button" class="tag tag-filter" onclick="filterBy('${escapeForSingleQuotedJs(tag)}')">${highlightMatch(tag, query)}</button>`)
+          .map(tag => `<button type="button" class="tag tag-filter" data-filter-field="tag" data-filter-value="${escapeAttribute(tag)}">${highlightMatch(tag, query)}</button>`)
           .join('')
         : '';
       const safeHomepage = sanitizeUrl(pkg.homepage);
-      const safeCommand = escapeForSingleQuotedJs(command);
+      const hasDetails = description || pkg.publisher || tagsHtml || safeHomepage || pkg.license;
 
       return `
         <div class="pkg">
           <div class="pkg-header">
-            <div>
+            <div class="pkg-title">
               <span class="pkg-name">${highlightMatch(pkg.name || pkg.id, query)}</span>
               <span class="pkg-id">${highlightMatch(pkg.id, query)}</span>
             </div>
             <div class="pkg-badges">
               ${pkg.version ? `<span class="pkg-version">v${escapeHtml(pkg.version)}</span>` : ''}
-              ${pkg.license ? `<span class="license-badge">${escapeHtml(pkg.license)}</span>` : ''}
             </div>
           </div>
-          ${description ? `<div class="pkg-desc">${highlightMatch(description, query)}</div>` : ''}
-          ${pkg.publisher ? `<div class="pkg-meta">Publisher: <button type="button" class="meta-filter" onclick="filterBy('${escapeForSingleQuotedJs(pkg.publisher)}')">${highlightMatch(pkg.publisher, query)}</button></div>` : ''}
-          ${tagsHtml ? `<div class="pkg-tags">${tagsHtml}</div>` : ''}
-          ${safeHomepage ? `<div class="pkg-links"><a class="pkg-link" href="${escapeHtml(safeHomepage)}" target="_blank" rel="noopener noreferrer">Homepage</a></div>` : ''}
+          ${shortDescription ? `<div class="pkg-desc pkg-summary">${highlightMatch(shortDescription, query)}</div>` : ''}
           <div class="copy-section">
             <code class="command">${escapeHtml(command)}</code>
-            <button class="copy-btn" onclick="copyCommand(this, '${safeCommand}')">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button type="button" class="copy-btn" data-copy-command="${escapeAttribute(command)}" aria-label="Copy install command for ${escapeAttribute(pkg.name || pkg.id)}">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
               </svg>
               Copy
             </button>
           </div>
+          ${hasDetails ? `<details class="pkg-details">
+            <summary>Details</summary>
+            ${description ? `<div class="pkg-desc">${highlightMatch(description, query)}</div>` : ''}
+            ${pkg.publisher ? `<div class="pkg-meta">Publisher: <button type="button" class="meta-filter" data-filter-field="publisher" data-filter-value="${escapeAttribute(pkg.publisher)}">${highlightMatch(pkg.publisher, query)}</button></div>` : ''}
+            ${tagsHtml ? `<div class="pkg-tags">${tagsHtml}</div>` : ''}
+            ${pkg.license ? `<div class="pkg-meta">License: <span class="license-badge">${escapeHtml(pkg.license)}</span></div>` : ''}
+            ${safeHomepage ? `<div class="pkg-links"><a class="pkg-link" href="${escapeAttribute(safeHomepage)}" target="_blank" rel="noopener noreferrer">Homepage</a></div>` : ''}
+          </details>` : ''}
         </div>
       `;
     }
@@ -824,7 +938,7 @@
               <section class="example-group" aria-label="${escapeHtml(group.title)}">
                 <div class="example-group-title">${escapeHtml(group.title)}</div>
                 <div class="example-searches">
-                  ${group.items.map(example => `<button type="button" class="example-search" onclick="filterBy('${escapeForSingleQuotedJs(example)}')">${escapeHtml(example)}</button>`).join('')}
+                  ${group.items.map(example => `<button type="button" class="example-search" onclick="searchFor('${escapeForSingleQuotedJs(example)}')">${escapeHtml(example)}</button>`).join('')}
                 </div>
               </section>
             `).join('')}
@@ -837,7 +951,7 @@
     function renderResults(query) {
       const trimmedQuery = String(query || '').trim();
 
-      if (!trimmedQuery) {
+      if (!trimmedQuery && !hasFilters()) {
         resultsDiv.innerHTML = renderEmptyState();
         return;
       }
@@ -845,8 +959,8 @@
       if (!currentResults.length) {
         resultsDiv.innerHTML = `
           <div class="no-results">
-            <p>No packages found matching "${escapeHtml(trimmedQuery)}"</p>
-            <p>Try searching by package ID, name, publisher, or tag</p>
+            <p>${trimmedQuery ? `No packages found matching "${escapeHtml(trimmedQuery)}"` : 'No packages found'}${hasFilters() ? ' with these filters' : ''}</p>
+            <p>${hasFilters() ? 'Remove a filter or try another search.' : 'Try searching by package ID, name, publisher, or tag.'}</p>
           </div>
         `;
         return;
@@ -868,50 +982,47 @@
     }
 
     function showResults(query, options = {}) {
-      if (!packages.length) return;
-
+      clearTimeout(searchTimeout);
+      searchTimeout = undefined;
+      if (!searchEngine) return;
       const trimmedQuery = String(query || '').trim();
-      const q = trimmedQuery.toLowerCase();
-      const tokens = tokenizeQuery(trimmedQuery);
-      const updateHistory = options.updateHistory !== false;
+      currentQuery = trimmedQuery;
+      if (options.updateHistory !== false) updateSearchUrl(trimmedQuery, options.historyMode);
+      if (options.historyMode === 'push') editingQuery = false;
+      renderFilters();
 
-      if (updateHistory) {
-        updateSearchUrl(trimmedQuery);
-      }
-
-      if (!tokens.length) {
-        currentResults = [];
-        lastMatchCount = packages.length;
-        visibleCount = 0;
-        updateStats('', lastMatchCount, visibleCount, false);
-        renderResults(trimmedQuery);
-        return;
-      }
-
-      const scoredResults = packages
-        .map(pkg => ({ pkg, score: scorePackage(pkg, q, tokens) }))
-        .filter(entry => entry.score > 0)
-        .sort((a, b) => b.score - a.score || (a.pkg.id || '').localeCompare(b.pkg.id || ''));
-
-      lastMatchCount = scoredResults.length;
-      currentResults = scoredResults.slice(0, MAX_SEARCH_RESULTS).map(entry => entry.pkg);
+      const result = !trimmedQuery && !hasFilters()
+        ? { results: [], fuzzy: false }
+        : searchEngine.search(trimmedQuery, activeFilters);
+      lastMatchCount = result.results.length;
+      currentResults = result.results.slice(0, MAX_SEARCH_RESULTS);
       visibleCount = Math.min(PAGE_SIZE, currentResults.length);
-
-      updateStats(trimmedQuery, lastMatchCount, visibleCount, lastMatchCount > visibleCount);
+      searchNote.textContent = result.fuzzy ? 'No exact text matches. Showing similar package names and IDs.' : '';
+      updateStats(trimmedQuery, lastMatchCount, visibleCount);
       renderResults(trimmedQuery);
     }
 
     function loadMoreResults() {
       visibleCount = Math.min(visibleCount + PAGE_SIZE, currentResults.length);
-      updateStats(searchInput.value.trim(), lastMatchCount, visibleCount, lastMatchCount > visibleCount);
-      renderResults(searchInput.value.trim());
+      updateStats(currentQuery, lastMatchCount, visibleCount);
+      renderResults(currentQuery);
     }
 
-    function filterBy(value) {
-      const query = String(value || '').trim();
-      if (!query) return;
+    function searchFor(query) {
       searchInput.value = query;
-      showResults(query);
+      showResults(query, { historyMode: 'push' });
+      searchInput.focus();
+    }
+
+    function filterBy(field, value) {
+      if (!['publisher', 'tag'].includes(field) || !String(value || '').trim()) return;
+      // Save pending text before adding a history entry for the filter.
+      updateSearchUrl(searchInput.value.trim());
+      activeFilters = WingetSearch.normalizeFilters({
+        publisher: field === 'publisher' ? value : activeFilters.publisher,
+        tags: field === 'tag' ? [...activeFilters.tags, value] : activeFilters.tags,
+      });
+      showResults(searchInput.value, { historyMode: 'push' });
       searchInput.focus();
     }
 

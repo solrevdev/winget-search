@@ -104,7 +104,8 @@
     </p>
     <p>
       The response contains extraction metadata and a <code>packages</code> array. Package records include
-      the ID, name, publisher, version, descriptions, tags, homepage, and license. Some values may be null.
+      the ID, name, moniker (short alias), publisher, version, descriptions, tags, homepage, and license.
+      Some values may be null. English locale fields override default-locale fields when present.
     </p>
 
     <h2>macOS and Linux</h2>
@@ -115,7 +116,7 @@ query='nssm'
 jq --arg q "$query" '
   .packages
   | map(select(
-      [.id, .name, .publisher, .description, ((.tags // []) | join(" "))]
+      [.id, .name, .moniker, .publisher, .shortDescription, .description, ((.tags // []) | join(" "))]
       | map(. // "")
       | join(" ")
       | ascii_downcase
@@ -132,7 +133,7 @@ $query = 'nssm'
 
 $catalog.packages |
   Where-Object {
-    $text = (@($_.id, $_.name, $_.publisher, $_.description) + @($_.tags) |
+    $text = (@($_.id, $_.name, $_.moniker, $_.publisher, $_.shortDescription, $_.description) + @($_.tags) |
       Where-Object { $_ } |
       ForEach-Object { [string]$_ }) -join ' '
     $text.IndexOf($query, [System.StringComparison]::OrdinalIgnoreCase) -ge 0

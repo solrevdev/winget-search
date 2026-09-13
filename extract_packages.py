@@ -20,67 +20,67 @@ def parse_version(ver_str):
         return version.parse("0.0.0")
 
 def extract_package_info(manifest_dir):
-    """Extract comprehensive package info from a manifest directory"""
+    """Merge default and English metadata, including singleton manifests."""
+    documents = []
+    for filename in sorted(os.listdir(manifest_dir)):
+        if not filename.endswith(('.yaml', '.yml')) or '.installer.' in filename:
+            continue
+        try:
+            with open(os.path.join(manifest_dir, filename), encoding="utf-8") as manifest:
+                document = yaml.safe_load(manifest)
+            if isinstance(document, dict):
+                documents.append((filename, document))
+        except (OSError, yaml.YAMLError) as error:
+            print(f"Error parsing manifest {filename}: {error}")
+
+    version_doc = next((doc for _, doc in documents
+                        if doc.get("ManifestType") in ("version", "singleton")), None)
+    if version_doc is None:
+        version_doc = next((doc for filename, doc in documents
+                            if '.locale.' not in filename and '.installer.' not in filename), {})
+
+    locales = [(filename, doc) for filename, doc in documents
+               if doc.get("ManifestType") in ("defaultLocale", "locale")
+               or '.locale.' in filename]
+
+    def matches_locale(filename, doc, locale):
+        return (doc.get("PackageLocale") == locale
+                or f".locale.{locale}." in filename)
+
+    default_locale = version_doc.get("DefaultLocale")
+    default_doc = next((doc for filename, doc in locales
+                        if default_locale and matches_locale(filename, doc, default_locale)), None)
+    if default_doc is None:
+        default_doc = next((doc for _, doc in locales
+                            if doc.get("ManifestType") == "defaultLocale"), None)
+    if default_doc is None:
+        default_doc = locales[0][1] if locales else {}
+    english_doc = next((doc for filename, doc in locales
+                        if matches_locale(filename, doc, "en-US")), {})
+
+    merged = {}
+    for document in (version_doc, default_doc, english_doc):
+        for key, value in document.items():
+            # Sparse translations must not erase metadata from the default locale.
+            if value is None or (isinstance(value, str) and not value.strip()):
+                continue
+            if isinstance(value, (list, dict)) and not value:
+                continue
+            merged[key] = value
+
+    raw_tags = merged.get("Tags", [])
     package_info = {
-        "id": None,
-        "name": None,
-        "description": None,
-        "publisher": None,
-        "version": None,
-        "shortDescription": None,
-        "tags": [],
-        "homepage": None,
-        "license": None
+        "id": merged.get("PackageIdentifier"),
+        "name": merged.get("PackageName"),
+        "description": merged.get("Description") or merged.get("ShortDescription"),
+        "publisher": merged.get("Publisher"),
+        "version": merged.get("PackageVersion"),
+        "shortDescription": merged.get("ShortDescription"),
+        "moniker": merged.get("Moniker"),
+        "tags": [str(tag) for tag in raw_tags if tag] if isinstance(raw_tags, list) else [],
+        "homepage": merged.get("PackageUrl"),
+        "license": merged.get("License"),
     }
-    
-    # Look for all YAML files in the directory
-    yaml_files = []
-    for file in os.listdir(manifest_dir):
-        if file.endswith(('.yaml', '.yml')):
-            yaml_files.append(file)
-    
-    # Process version manifest first
-    version_file = next((f for f in yaml_files if not '.locale.' in f and not '.installer.' in f), None)
-    if version_file:
-        try:
-            with open(os.path.join(manifest_dir, version_file), encoding="utf-8") as f:
-                doc = yaml.safe_load(f)
-                package_info["id"] = doc.get("PackageIdentifier")
-                package_info["version"] = doc.get("PackageVersion")
-                package_info["shortDescription"] = doc.get("ShortDescription")
-                # Ensure tags are strings
-                raw_tags = doc.get("Tags", [])
-                if isinstance(raw_tags, list):
-                    package_info["tags"] = [str(tag) for tag in raw_tags if tag]
-                else:
-                    package_info["tags"] = []
-        except Exception as e:
-            print(f"Error parsing version file {version_file}: {e}")
-    
-    # Look for English locale file
-    locale_file = next((f for f in yaml_files if '.locale.en-US.' in f), None)
-    if not locale_file:
-        # Fallback to default locale
-        locale_file = next((f for f in yaml_files if '.locale.' in f and 'en-US' not in f), None)
-    
-    if locale_file:
-        try:
-            with open(os.path.join(manifest_dir, locale_file), encoding="utf-8") as f:
-                doc = yaml.safe_load(f)
-                package_info["name"] = doc.get("PackageName")
-                package_info["publisher"] = doc.get("Publisher")
-                package_info["description"] = doc.get("Description") or doc.get("ShortDescription")
-                package_info["homepage"] = doc.get("PackageUrl")
-                package_info["license"] = doc.get("License")
-                if not package_info["tags"]:
-                    raw_tags = doc.get("Tags", [])
-                    if isinstance(raw_tags, list):
-                        package_info["tags"] = [str(tag) for tag in raw_tags if tag]
-                    else:
-                        package_info["tags"] = []
-        except Exception as e:
-            print(f"Error parsing locale file {locale_file}: {e}")
-    
     return package_info if package_info["id"] else None
 
 def find_latest_version_dirs(manifests_dir):

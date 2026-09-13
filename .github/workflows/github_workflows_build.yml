@@ -89,6 +89,8 @@ jobs:
                   
                   # Copy files (overwrite if exists)
                   cp index.html deploy/
+                  cp search.js deploy/
+                  cp -R vendor deploy/
                   cp agent-access.html deploy/
                   cp llms.txt deploy/
                   cp og-image.png deploy/

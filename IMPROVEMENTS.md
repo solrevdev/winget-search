@@ -3,8 +3,36 @@
 This document captures known bugs, quick wins, and feature ideas for the winget-search project.
 It is intended as a starting point for new contributors or an LLM asked to find work to do.
 
+Start with [NEXT_STEPS.md](NEXT_STEPS.md) for the current plan and session handoff.
+
 Each item notes which file(s) are affected, the effort involved, and whether the change is
 backend-only (Python / CI), frontend-only (index.html), or both.
+
+## Search and catalog update (2026-09-13)
+
+Shipped in [PR #6](https://github.com/solrevdev/winget-search/pull/6):
+
+- Preserve manifest monikers, including `vscode`, and expand `vs code` to that alias.
+- Rank exact IDs, monikers, and names ahead of prefixes and descriptive matches.
+- Merge nonempty English fields over the declared default locale. Keep singleton
+  metadata and separate short and full descriptions.
+- Show compact two-line summaries with Copy always visible. Native Details reveals
+  full descriptions, publisher, tags, license, and homepage. This completes item #12.
+- Show the actual result total. Mention the 200-result cap only when it applies.
+- Add extractor and search regression tests, with a separate PR test workflow.
+
+The footer repository URL is already correct, so item #3 is also complete.
+The older status tables below record earlier reviews and are not the current status.
+
+[PR #7](https://github.com/solrevdev/winget-search/pull/7) adds typo tolerance (#14)
+and true publisher/tag constraints with chips, URL state, and browser history. It
+is merged, deployed, and verified live; release evidence is in `NEXT_STEPS.md`.
+
+Next work is the SEO batch in PR #5 with issue #1, followed by the separate issue #4
+maintenance batch. Install-list export and a smaller initial catalog with static
+package detail pages (#15) remain later feature work.
+Version comparison for non-PEP440 versions (#24), workflow reliability, and README
+housekeeping remain separate work. SEO changes are already proposed in PR #5.
 
 ## Branch Progress Update (2026-02-26)
 
